@@ -1,0 +1,13 @@
+{
+	"required": true,
+	"package": "md.redstone.mixin.client",
+	"compatibilityLevel": "JAVA_21",
+	"refmap": "client-mossy.refmap.json",
+	"client": [
+		"JoinMultiplayerScreenMixin",
+		"IntegratedServerMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

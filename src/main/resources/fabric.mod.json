@@ -1,0 +1,39 @@
+{
+	"schemaVersion": 1,
+	"id": "mossy",
+	"version": "${version}",
+	"name": "Mossy",
+	"description": "P2P world discovery and friend finding via MOSS mesh network. Find and connect to friends' worlds easily!",
+	"authors": [
+		"Mossy Team"
+	],
+	"contact": {
+		"homepage": "https://github.com/mossy-mod",
+		"sources": "https://github.com/mossy-mod/mossy"
+	},
+	"license": "MIT",
+	"icon": "assets/mossy/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"md.redstone.Mossy"
+		],
+		"client": [
+			"md.redstone.MossyClient"
+		]
+	},
+	"mixins": [
+		"mossy.mixins.json",
+		{
+			"config": "mossy.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*",
+		"fabric-language-kotlin": ">=1.13.0"
+	}
+}
