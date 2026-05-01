@@ -2,6 +2,7 @@ package md.redstone.gui;
 
 import md.redstone.config.MossyConfig;
 import md.redstone.moss.MossManager;
+import net.minecraft.network.chat.Component;
 
 import java.util.Base64;
 
@@ -23,23 +24,22 @@ final class FriendAccessInfo {
         return code.isBlank() ? "" : JOIN_CODE_PREFIX + code;
     }
 
-    static String friendCodeText() {
+    static Component friendCodeText() {
         String code = shareCodeValue();
-        return code.isBlank() ? "Starting Mossy..." : code;
+        return code.isBlank() ? MossyText.tr("common.starting") : Component.literal(code);
     }
 
-    static String manualPortText() {
-        return "Fallback port: " + MossyConfig.getInstance().listenPort;
+    static Component manualPortText() {
+        return MossyText.tr("settings.joinCode.fallbackPort", MossyConfig.getInstance().listenPort);
     }
 
-    static String manualAddressHint() {
-        return "If the join code cannot reach you, share your reachable IP or host with this port.";
+    static Component manualAddressHint() {
+        return MossyText.tr("settings.joinCode.manualHint");
     }
 
     static boolean isValidFriendCode(String value) {
         return !parseFriendCode(value).isBlank();
     }
-
 
     static String parseFriendCode(String value) {
         if (value == null) {

@@ -35,50 +35,86 @@ public final class MossyOwoUi {
     }
 
     public static ButtonComponent actionButton(String text, Consumer<ButtonComponent> action) {
+        return actionButton(Component.literal(text), action);
+    }
+
+    public static ButtonComponent actionButton(Component text, Consumer<ButtonComponent> action) {
         return button(text, 104, BUTTON, BUTTON_HOVER, BUTTON_DISABLED, action);
     }
 
     public static ButtonComponent primaryButton(String text, Consumer<ButtonComponent> action) {
+        return primaryButton(Component.literal(text), action);
+    }
+
+    public static ButtonComponent primaryButton(Component text, Consumer<ButtonComponent> action) {
         return button(text, 132, BUTTON_PRIMARY, BUTTON_PRIMARY_HOVER, BUTTON_DISABLED, action);
     }
 
     public static ButtonComponent dangerButton(String text, Consumer<ButtonComponent> action) {
+        return dangerButton(Component.literal(text), action);
+    }
+
+    public static ButtonComponent dangerButton(Component text, Consumer<ButtonComponent> action) {
         return button(text, 116, BUTTON_DANGER, BUTTON_DANGER_HOVER, BUTTON_DISABLED, action);
     }
 
     public static ButtonComponent compactButton(String text, Consumer<ButtonComponent> action) {
+        return compactButton(Component.literal(text), action);
+    }
+
+    public static ButtonComponent compactButton(Component text, Consumer<ButtonComponent> action) {
         return button(text, 76, BUTTON, BUTTON_HOVER, BUTTON_DISABLED, action);
     }
 
-    private static ButtonComponent button(String text, int width, int color, int hover, int disabled, Consumer<ButtonComponent> action) {
-        ButtonComponent button = MossyOwoComponents.button(Component.literal(text), action::accept);
+    private static ButtonComponent button(Component text, int width, int color, int hover, int disabled, Consumer<ButtonComponent> action) {
+        ButtonComponent button = MossyOwoComponents.button(text, action::accept);
         button.sizing(Sizing.fixed(width), Sizing.fixed(20));
         button.renderer(ButtonComponent.Renderer.flat(color, hover, disabled));
         return button;
     }
 
     public static LabelComponent titleLabel(String text) {
+        return titleLabel(Component.literal(text));
+    }
+
+    public static LabelComponent titleLabel(Component text) {
         return label(text, TEXT_PRIMARY, true);
     }
 
     public static LabelComponent primaryLabel(String text) {
+        return primaryLabel(Component.literal(text));
+    }
+
+    public static LabelComponent primaryLabel(Component text) {
         return label(text, TEXT_PRIMARY, true);
     }
 
     public static LabelComponent secondaryLabel(String text) {
+        return secondaryLabel(Component.literal(text));
+    }
+
+    public static LabelComponent secondaryLabel(Component text) {
         return label(text, TEXT_SECONDARY, false);
     }
 
     public static LabelComponent mutedLabel(String text) {
+        return mutedLabel(Component.literal(text));
+    }
+
+    public static LabelComponent mutedLabel(Component text) {
         return label(text, TEXT_MUTED, false);
     }
 
     public static LabelComponent statusLabel(String text, int color) {
+        return statusLabel(Component.literal(text), color);
+    }
+
+    public static LabelComponent statusLabel(Component text, int color) {
         return label(text, color, false);
     }
 
-    private static LabelComponent label(String text, int color, boolean shadow) {
-        LabelComponent label = MossyOwoComponents.label(Component.literal(text));
+    private static LabelComponent label(Component text, int color, boolean shadow) {
+        LabelComponent label = MossyOwoComponents.label(text);
         label.color(Color.ofRgb(color));
         label.shadow(shadow);
         return label;
@@ -93,6 +129,10 @@ public final class MossyOwoUi {
     }
 
     public static FlowLayout header(String title, String subtitle) {
+        return header(Component.literal(title), Component.literal(subtitle));
+    }
+
+    public static FlowLayout header(Component title, Component subtitle) {
         FlowLayout column = MossyOwoContainers.verticalFlow(Sizing.expand(), Sizing.content());
         column.gap(2);
         column.child(titleLabel(title));
@@ -101,6 +141,10 @@ public final class MossyOwoUi {
     }
 
     public static FlowLayout sectionPanel(String title) {
+        return sectionPanel(Component.literal(title));
+    }
+
+    public static FlowLayout sectionPanel(Component title) {
         FlowLayout panel = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.fill(100));
         panel.surface(Surface.flat(PANEL));
         panel.padding(Insets.of(8));
@@ -110,6 +154,10 @@ public final class MossyOwoUi {
     }
 
     public static FlowLayout softPanel(String title, String body) {
+        return softPanel(Component.literal(title), Component.literal(body));
+    }
+
+    public static FlowLayout softPanel(Component title, Component body) {
         FlowLayout panel = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         panel.surface(Surface.flat(PANEL_SOFT));
         panel.padding(Insets.of(8));
@@ -120,6 +168,10 @@ public final class MossyOwoUi {
     }
 
     public static FlowLayout infoRow(String label, String value) {
+        return infoRow(Component.literal(label), Component.literal(value));
+    }
+
+    public static FlowLayout infoRow(Component label, Component value) {
         FlowLayout row = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         row.gap(1);
         row.child(mutedLabel(label));

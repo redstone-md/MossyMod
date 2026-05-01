@@ -46,9 +46,9 @@ public final class MossyWorldEntry extends ServerSelectionList.NetworkServerEntr
         graphics.fill(x + 7, y + 22, x + 17, y + 25, ICON_ACCENT);
 
         graphics.drawString(font, Component.literal(world.worldName()), textX, y + 1, TEXT_PRIMARY);
-        graphics.drawString(font, Component.literal(statusLine()), textX, y + 13, TEXT_SECONDARY);
-        graphics.drawString(font, Component.literal(routeLine()), textX, y + 24, TEXT_MUTED);
-        graphics.drawString(font, Component.literal(freshnessLabel()), right - 58, y + 13, TEXT_SECONDARY);
+        graphics.drawString(font, statusLine(), textX, y + 13, TEXT_SECONDARY);
+        graphics.drawString(font, routeLine(), textX, y + 24, TEXT_MUTED);
+        graphics.drawString(font, freshnessLabel(), right - 58, y + 13, TEXT_SECONDARY);
     }
 
     @Override
@@ -85,7 +85,7 @@ public final class MossyWorldEntry extends ServerSelectionList.NetworkServerEntr
 
     @Override
     public Component getNarration() {
-        return Component.literal(world.worldName() + ", Mossy world, " + statusLine());
+        return Component.translatable("mossy.serverList.narration", world.worldName(), statusLine());
     }
 
     private static String stableAddress(P2PWorldInfo world) {
@@ -95,26 +95,28 @@ public final class MossyWorldEntry extends ServerSelectionList.NetworkServerEntr
         return world.hostAddress() + ":" + world.port();
     }
 
-    private String statusLine() {
-        String motd = world.motd() == null || world.motd().isBlank() ? "Open LAN world" : world.motd();
-        return motd + "  " + world.getPlayerDisplay();
+    private Component statusLine() {
+        Component motd = world.motd() == null || world.motd().isBlank()
+            ? Component.translatable("mossy.serverList.openLan")
+            : Component.literal(world.motd());
+        return Component.translatable("mossy.serverList.status", motd, world.getPlayerDisplay());
     }
 
-    private String routeLine() {
+    private Component routeLine() {
         if (world.ownerPublicKey() != null && !world.ownerPublicKey().isBlank()) {
-            return "Mossy private tunnel";
+            return Component.translatable("mossy.serverList.privateTunnel");
         }
         if (P2PConnectionManager.INSTANCE.canConnectDirectly(world)) {
-            return "Direct fallback " + world.getDisplayAddress();
+            return Component.translatable("mossy.serverList.directFallback", world.getDisplayAddress());
         }
-        return "Waiting for route";
+        return Component.translatable("mossy.serverList.waitingForRoute");
     }
 
-    private String freshnessLabel() {
+    private Component freshnessLabel() {
         long ageSeconds = Math.max(0L, (System.currentTimeMillis() - world.timestamp()) / 1000L);
         if (ageSeconds <= 1L) {
-            return "online";
+            return Component.translatable("mossy.serverList.online");
         }
-        return ageSeconds + "s ago";
+        return Component.translatable("mossy.serverList.secondsAgo", ageSeconds);
     }
 }

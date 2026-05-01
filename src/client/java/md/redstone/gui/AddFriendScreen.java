@@ -22,7 +22,7 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
     private LabelComponent statusLabel;
 
     public AddFriendScreen(Screen parent) {
-        super(Component.literal("Add Friend"), parent);
+        super(MossyText.tr("addFriend.title"), parent);
     }
 
     @Override
@@ -36,32 +36,32 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
         frame.verticalSizing(Sizing.content());
 
         frame.child(MossyOwoUi.header(
-            "Join a friend",
-            "Paste their Mossy join code, or add a network address when discovery needs help."
+            MossyText.tr("addFriend.header.title"),
+            MossyText.tr("addFriend.header.subtitle")
         ));
 
-        FlowLayout codeSection = MossyOwoUi.sectionPanel("Friend code or network address");
+        FlowLayout codeSection = MossyOwoUi.sectionPanel(MossyText.tr("addFriend.section.title"));
         codeSection.verticalSizing(Sizing.content());
-        codeSection.child(MossyOwoUi.mutedLabel("A join code connects to a friend's open LAN world through Mossy. A network address is a host:port fallback."));
+        codeSection.child(MossyOwoUi.mutedLabel(MossyText.tr("addFriend.section.body")));
 
         this.addressInput = MossyOwoComponents.textBox(Sizing.fill(100));
         this.addressInput.setMaxLength(140);
         this.addressInput.text("");
-        this.addressInput.setHint(Component.literal("mossy:friend-code or 203.0.113.42:41030"));
+        this.addressInput.setHint(MossyText.tr("addFriend.input.hint"));
         this.addressInput.onChanged().subscribe(this::onAddressChanged);
         codeSection.child(this.addressInput);
 
-        codeSection.child(MossyOwoUi.mutedLabel("Ask your friend to open their world to LAN first, then paste the code they copied from Mossy."));
+        codeSection.child(MossyOwoUi.mutedLabel(MossyText.tr("addFriend.section.help")));
 
         FlowLayout actions = MossyOwoUi.horizontalActions();
 
-        this.addButton = MossyOwoUi.primaryButton("Continue", button -> useFriendInput());
+        this.addButton = MossyOwoUi.primaryButton(MossyText.tr("common.continue"), button -> useFriendInput());
         this.addButton.active(false);
         actions.child(this.addButton);
-        actions.child(MossyOwoUi.compactButton("Paste", button -> pasteFromClipboard()));
-        actions.child(MossyOwoUi.actionButton("Back", button -> onClose()));
+        actions.child(MossyOwoUi.compactButton(MossyText.tr("common.paste"), button -> pasteFromClipboard()));
+        actions.child(MossyOwoUi.actionButton(MossyText.tr("common.back"), button -> onClose()));
 
-        this.statusLabel = MossyOwoUi.mutedLabel("Waiting for a join code or network address.");
+        this.statusLabel = MossyOwoUi.mutedLabel(MossyText.tr("addFriend.status.waiting"));
 
         frame.child(codeSection);
         frame.child(actions);
@@ -77,18 +77,18 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
         this.addButton.active(joinCode || networkAddress);
 
         if (joinCode) {
-            setStatus("Ready to join by Mossy code. Your friend must keep the LAN world open.", MossyOwoUi.MOSS);
+            setStatus(MossyText.tr("addFriend.status.readyCode"), MossyOwoUi.MOSS);
         } else if (networkAddress) {
-            setStatus("Ready to save this network address for discovery fallback.", MossyOwoUi.MOSS);
+            setStatus(MossyText.tr("addFriend.status.readyAddress"), MossyOwoUi.MOSS);
         } else {
-            setStatus("Paste a Mossy join code, or use host:port like 203.0.113.42:41030", MossyOwoUi.LANTERN);
+            setStatus(MossyText.tr("addFriend.status.prompt"), MossyOwoUi.LANTERN);
         }
     }
 
     private void pasteFromClipboard() {
         String clipboard = minecraft != null ? minecraft.keyboardHandler.getClipboard() : "";
         if (clipboard == null || clipboard.isBlank()) {
-            setStatus("Clipboard is empty.", MossyOwoUi.LANTERN);
+            setStatus(MossyText.tr("addFriend.status.emptyClipboard"), MossyOwoUi.LANTERN);
             return;
         }
 
@@ -109,25 +109,25 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
             return;
         }
 
-        setStatus("Paste a Mossy join code, or use host:port like 203.0.113.42:41030", MossyOwoUi.REDSTONE);
+        setStatus(MossyText.tr("addFriend.status.prompt"), MossyOwoUi.REDSTONE);
     }
 
     private void joinByFriendCode(String peerId) {
         MossManager moss = MossManager.getInstance();
         if (peerId.equals(moss.getPublicKeyBase64())) {
-            setStatus("This is your own join code. Ask your friend to copy theirs.", MossyOwoUi.LANTERN);
+            setStatus(MossyText.tr("addFriend.status.ownCode"), MossyOwoUi.LANTERN);
             return;
         }
         if (!moss.isRunning()) {
-            setStatus("Mossy is still starting. Try again in a moment.", MossyOwoUi.LANTERN);
+            setStatus(MossyText.tr("common.mossyStartingHint"), MossyOwoUi.LANTERN);
             return;
         }
 
         P2PWorldInfo world = new P2PWorldInfo(
-            "Friend's LAN world",
+            MossyText.tr("addFriend.syntheticWorld.name").getString(),
             "",
             25565,
-            "Joined by Mossy code",
+            MossyText.tr("addFriend.syntheticWorld.motd").getString(),
             0,
             20,
             System.currentTimeMillis(),
@@ -140,18 +140,18 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
         MossyConfig.getInstance().addStaticPeer(address);
         if (MossManager.getInstance().isRunning()) {
             MossManager.getInstance().addFriend(address);
-            setStatus("Network address added.", MossyOwoUi.MOSS);
+            setStatus(MossyText.tr("addFriend.status.addressAdded"), MossyOwoUi.MOSS);
         } else {
-            setStatus("Network address saved.", MossyOwoUi.MOSS);
+            setStatus(MossyText.tr("addFriend.status.addressSaved"), MossyOwoUi.MOSS);
         }
         onClose();
     }
 
-    private void setStatus(String text, int color) {
+    private void setStatus(Component text, int color) {
         if (this.statusLabel == null) {
             return;
         }
-        this.statusLabel.text(Component.literal(text));
+        this.statusLabel.text(text);
         this.statusLabel.color(Color.ofRgb(color));
     }
 

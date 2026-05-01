@@ -37,7 +37,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
     private P2PWorldInfo selectedWorld;
 
     public FriendListScreen(Screen parent) {
-        super(Component.literal("Mossy Friends"), parent);
+        super(MossyText.tr("friends.title"), parent);
     }
 
     @Override
@@ -49,17 +49,17 @@ public class FriendListScreen extends BaseMossyOwoScreen {
 
         FlowLayout frame = MossyOwoUi.shell();
         FlowLayout titleColumn = MossyOwoUi.header(
-            "Friends' worlds",
-            "Worlds shared with you appear here automatically. Pick one and join."
+            MossyText.tr("friends.header.title"),
+            MossyText.tr("friends.header.subtitle")
         );
 
         FlowLayout header = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
         header.gap(6);
         header.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         header.child(titleColumn);
-        header.child(MossyOwoUi.compactButton("Refresh", button -> refreshWorlds()));
-        header.child(MossyOwoUi.actionButton("Add Friend", button -> openScreen(new AddFriendScreen(this))));
-        header.child(MossyOwoUi.compactButton("My Code", button -> openScreen(new SettingsScreen(this))));
+        header.child(MossyOwoUi.compactButton(MossyText.tr("common.refresh"), button -> refreshWorlds()));
+        header.child(MossyOwoUi.actionButton(MossyText.tr("common.addFriend"), button -> openScreen(new AddFriendScreen(this))));
+        header.child(MossyOwoUi.compactButton(MossyText.tr("common.myCode"), button -> openScreen(new SettingsScreen(this))));
 
         this.listContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.listContent.gap(4);
@@ -69,20 +69,20 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         worldsScroll.scrollbarThiccness(8);
         worldsScroll.padding(Insets.right(2));
 
-        FlowLayout worldsPanel = MossyOwoUi.sectionPanel("Available worlds");
+        FlowLayout worldsPanel = MossyOwoUi.sectionPanel(MossyText.tr("friends.available.title"));
         worldsPanel.horizontalSizing(Sizing.fill(42));
-        worldsPanel.child(MossyOwoUi.mutedLabel("These are online worlds your friends are publishing now."));
+        worldsPanel.child(MossyOwoUi.mutedLabel(MossyText.tr("friends.available.body")));
         worldsPanel.child(worldsScroll);
 
         this.detailsContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.detailsContent.gap(8);
 
-        this.connectButton = MossyOwoUi.primaryButton("Join World", button -> connectToSelected());
+        this.connectButton = MossyOwoUi.primaryButton(MossyText.tr("friends.joinWorld"), button -> connectToSelected());
         this.connectButton.active(false);
 
-        FlowLayout detailsPanel = MossyOwoUi.sectionPanel("Selected world");
+        FlowLayout detailsPanel = MossyOwoUi.sectionPanel(MossyText.tr("friends.selected.title"));
         detailsPanel.horizontalSizing(Sizing.expand());
-        detailsPanel.child(MossyOwoUi.mutedLabel("Check who is online and how Mossy will connect before joining."));
+        detailsPanel.child(MossyOwoUi.mutedLabel(MossyText.tr("friends.selected.body")));
         detailsPanel.child(this.detailsContent);
         detailsPanel.child(this.connectButton);
 
@@ -91,13 +91,13 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         body.child(worldsPanel);
         body.child(detailsPanel);
 
-        this.statusLabel = MossyOwoUi.mutedLabel("Starting Mossy...");
+        this.statusLabel = MossyOwoUi.mutedLabel(MossyText.tr("common.starting"));
         FlowLayout footer = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
         footer.gap(6);
         footer.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         footer.child(this.statusLabel.<LabelComponent>configure(label -> label.horizontalSizing(Sizing.expand())));
-        footer.child(MossyOwoUi.actionButton("Connection Help", button -> openScreen(new DiagnosticsScreen(this))));
-        footer.child(MossyOwoUi.actionButton("Back", button -> onClose()));
+        footer.child(MossyOwoUi.actionButton(MossyText.tr("common.connectionHelp"), button -> openScreen(new DiagnosticsScreen(this))));
+        footer.child(MossyOwoUi.actionButton(MossyText.tr("common.back"), button -> onClose()));
 
         frame.child(header);
         frame.child(body);
@@ -146,8 +146,8 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         this.listContent.clearChildren();
         if (this.discoveredWorlds.isEmpty()) {
             this.listContent.child(MossyOwoUi.softPanel(
-                "No shared worlds yet",
-                "Ask a friend to open their world to LAN with Mossy running, or add their network address if discovery needs help."
+                MossyText.tr("friends.empty.title"),
+                MossyText.tr("friends.empty.body")
             ));
             return;
         }
@@ -163,7 +163,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
             button.renderer(isSelected(world)
                 ? ButtonComponent.Renderer.flat(MossyOwoUi.BUTTON_PRIMARY, MossyOwoUi.BUTTON_PRIMARY_HOVER, MossyOwoUi.BUTTON_DISABLED)
                 : ButtonComponent.Renderer.flat(MossyOwoUi.BUTTON, MossyOwoUi.BUTTON_HOVER, MossyOwoUi.BUTTON_DISABLED));
-            button.tooltip(Component.literal(routeTitle(world)));
+            button.tooltip(routeTitle(world));
             this.listContent.child(button);
         }
     }
@@ -177,8 +177,8 @@ public class FriendListScreen extends BaseMossyOwoScreen {
 
         if (this.selectedWorld == null) {
             this.detailsContent.child(MossyOwoUi.softPanel(
-                "Choose a world",
-                "When a friend appears, Mossy will show whether it can use a private tunnel or a direct fallback."
+                MossyText.tr("friends.choose.title"),
+                MossyText.tr("friends.choose.body")
             ));
             if (this.connectButton != null) {
                 this.connectButton.active(false);
@@ -187,15 +187,15 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         }
 
         this.detailsContent.child(MossyOwoUi.softPanel(routeTitle(this.selectedWorld), routeDescription(this.selectedWorld)));
-        this.detailsContent.child(detailLine("World", this.selectedWorld.worldName()));
-        this.detailsContent.child(detailLine("Players", this.selectedWorld.getPlayerDisplay()));
-        this.detailsContent.child(detailLine("Message", this.selectedWorld.motd().isBlank() ? "No message shared" : this.selectedWorld.motd()));
-        this.detailsContent.child(detailLine("Last seen", freshnessLabel(this.selectedWorld)));
+        this.detailsContent.child(detailLine(MossyText.tr("friends.detail.world"), Component.literal(this.selectedWorld.worldName())));
+        this.detailsContent.child(detailLine(MossyText.tr("friends.detail.players"), Component.literal(this.selectedWorld.getPlayerDisplay())));
+        this.detailsContent.child(detailLine(MossyText.tr("friends.detail.message"), motdText(this.selectedWorld)));
+        this.detailsContent.child(detailLine(MossyText.tr("friends.detail.lastSeen"), freshnessLabel(this.selectedWorld)));
 
-        LabelComponent hint = MossyOwoUi.mutedLabel(this.selectedWorld.ownerPublicKey() != null && !this.selectedWorld.ownerPublicKey().isBlank()
-            ? "Mossy will try the private route first."
-            : "This friend is only reachable through a normal server address right now.");
-        hint.color(Color.ofRgb(this.selectedWorld.ownerPublicKey() != null && !this.selectedWorld.ownerPublicKey().isBlank() ? MossyOwoUi.MOSS : MossyOwoUi.LANTERN));
+        LabelComponent hint = MossyOwoUi.mutedLabel(hasPrivateRoute(this.selectedWorld)
+            ? MossyText.tr("friends.route.privateHint")
+            : MossyText.tr("friends.route.addressHint"));
+        hint.color(Color.ofRgb(hasPrivateRoute(this.selectedWorld) ? MossyOwoUi.MOSS : MossyOwoUi.LANTERN));
         this.detailsContent.child(hint);
 
         if (this.connectButton != null) {
@@ -210,20 +210,20 @@ public class FriendListScreen extends BaseMossyOwoScreen {
 
         MossManager moss = MossManager.getInstance();
         if (!moss.isRunning()) {
-            this.statusLabel.text(Component.literal("Starting Mossy... worlds will appear when the connection is ready."));
+            this.statusLabel.text(MossyText.tr("friends.status.starting"));
             this.statusLabel.color(Color.ofRgb(MossyOwoUi.LANTERN));
             return;
         }
 
         if (this.discoveredWorlds.isEmpty()) {
-            this.statusLabel.text(Component.literal("Mossy is ready. Waiting for friends to share a world."));
+            this.statusLabel.text(MossyText.tr("friends.status.waiting"));
             this.statusLabel.color(Color.ofRgb(MossyOwoUi.MOSS));
             return;
         }
 
-        String route = this.selectedWorld == null ? "none selected" : connectMode(this.selectedWorld);
-        this.statusLabel.text(Component.literal(this.discoveredWorlds.size() + " world(s) available. Selected route: " + route));
-        this.statusLabel.color(Color.ofRgb(this.selectedWorld != null && "Not reachable".equals(connectMode(this.selectedWorld)) ? MossyOwoUi.REDSTONE : MossyOwoUi.MOSS));
+        Component route = this.selectedWorld == null ? MossyText.tr("friends.route.none") : connectMode(this.selectedWorld);
+        this.statusLabel.text(MossyText.tr("friends.status.available", this.discoveredWorlds.size(), route));
+        this.statusLabel.color(Color.ofRgb(this.selectedWorld != null && !canReach(this.selectedWorld) ? MossyOwoUi.REDSTONE : MossyOwoUi.MOSS));
     }
 
     private void connectToSelected() {
@@ -231,7 +231,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
             return;
         }
 
-        if (this.selectedWorld.ownerPublicKey() != null && !this.selectedWorld.ownerPublicKey().isBlank()) {
+        if (hasPrivateRoute(this.selectedWorld)) {
             P2PConnectScreen.startConnecting(this, minecraft, this.selectedWorld);
             return;
         }
@@ -246,7 +246,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         ConnectScreen.startConnecting(this.parent, minecraft, serverAddress, serverData, false, null);
     }
 
-    private FlowLayout detailLine(String label, String value) {
+    private FlowLayout detailLine(Component label, Component value) {
         FlowLayout line = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         line.gap(1);
         line.child(MossyOwoUi.mutedLabel(label));
@@ -263,7 +263,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
     }
 
     private String worldKey(P2PWorldInfo world) {
-        if (world.ownerPublicKey() != null && !world.ownerPublicKey().isBlank()) {
+        if (hasPrivateRoute(world)) {
             return world.ownerPublicKey();
         }
         return world.worldName() + "@" + world.hostAddress() + ":" + world.port();
@@ -273,48 +273,49 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         return world.worldName() + "  " + world.getPlayerDisplay();
     }
 
-    private String endpointLabel(P2PWorldInfo world) {
-        if (world.ownerPublicKey() != null && !world.ownerPublicKey().isBlank()) {
-            return "Private friend route";
+    private Component connectMode(P2PWorldInfo world) {
+        if (hasPrivateRoute(world)) {
+            return MossyText.tr("friends.route.private");
         }
         if (P2PConnectionManager.INSTANCE.canConnectDirectly(world)) {
-            return world.getDisplayAddress();
+            return MossyText.tr("friends.route.serverAddress");
         }
-        return "Discovery only";
+        return MossyText.tr("friends.route.notReachable");
     }
 
-    private String connectMode(P2PWorldInfo world) {
-        if (world.ownerPublicKey() != null && !world.ownerPublicKey().isBlank()) {
-            return "Private tunnel";
+    private Component freshnessLabel(P2PWorldInfo world) {
+        return world.isStale() ? MossyText.tr("friends.freshness.stale") : MossyText.tr("friends.freshness.now");
+    }
+
+    private Component routeTitle(P2PWorldInfo world) {
+        if (hasPrivateRoute(world)) {
+            return MossyText.tr("friends.routeTitle.private");
         }
         if (P2PConnectionManager.INSTANCE.canConnectDirectly(world)) {
-            return "Server address";
+            return MossyText.tr("friends.routeTitle.address");
         }
-        return "Not reachable";
+        return MossyText.tr("friends.routeTitle.unreachable");
     }
 
-    private String freshnessLabel(P2PWorldInfo world) {
-        return world.isStale() ? "a little while ago" : "just now";
-    }
-
-
-    private String routeTitle(P2PWorldInfo world) {
-        if (world.ownerPublicKey() != null && !world.ownerPublicKey().isBlank()) {
-            return "Ready for a private join";
+    private Component routeDescription(P2PWorldInfo world) {
+        if (hasPrivateRoute(world)) {
+            return MossyText.tr("friends.routeDescription.private");
         }
         if (P2PConnectionManager.INSTANCE.canConnectDirectly(world)) {
-            return "Ready through server address";
+            return MossyText.tr("friends.routeDescription.address");
         }
-        return "Not reachable yet";
+        return MossyText.tr("friends.routeDescription.unreachable");
     }
 
-    private String routeDescription(P2PWorldInfo world) {
-        if (world.ownerPublicKey() != null && !world.ownerPublicKey().isBlank()) {
-            return "Mossy will open a tunnel to your friend's world. No address sharing needed.";
-        }
-        if (P2PConnectionManager.INSTANCE.canConnectDirectly(world)) {
-            return "Mossy found a normal address for this world and can use it as a fallback.";
-        }
-        return "Keep Mossy open or add a network address so this world can be reached.";
+    private Component motdText(P2PWorldInfo world) {
+        return world.motd().isBlank() ? MossyText.tr("friends.detail.noMessage") : Component.literal(world.motd());
+    }
+
+    private boolean hasPrivateRoute(P2PWorldInfo world) {
+        return world.ownerPublicKey() != null && !world.ownerPublicKey().isBlank();
+    }
+
+    private boolean canReach(P2PWorldInfo world) {
+        return hasPrivateRoute(world) || P2PConnectionManager.INSTANCE.canConnectDirectly(world);
     }
 }
