@@ -5,6 +5,8 @@
 	"refmap": "client-mossy.refmap.json",
 	"client": [
 		"JoinMultiplayerScreenMixin",
+		"ServerSelectionListAccessor",
+		"ServerSelectionListMixin",
 		"IntegratedServerMixin"
 	],
 	"injectors": {

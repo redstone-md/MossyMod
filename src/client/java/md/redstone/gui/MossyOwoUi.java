@@ -14,19 +14,19 @@ import net.minecraft.network.chat.Component;
 import java.util.function.Consumer;
 
 public final class MossyOwoUi {
-    public static final int TEXT_PRIMARY = 0xEEF4F1;
-    public static final int TEXT_SECONDARY = 0xB8C8C0;
-    public static final int TEXT_MUTED = 0x82938C;
+    public static final int TEXT_PRIMARY = 0xF1F6F3;
+    public static final int TEXT_SECONDARY = 0xB6C7BE;
+    public static final int TEXT_MUTED = 0x7F9188;
     public static final int MOSS = 0x7FC77E;
     public static final int MOSS_DARK = 0xFF2D5739;
     public static final int LANTERN = 0xE4B55E;
     public static final int REDSTONE = 0xD46D63;
-    public static final int PANEL = 0xFF17201D;
-    public static final int PANEL_SOFT = 0xFF1D2824;
-    public static final int BUTTON = 0xFF24342E;
-    public static final int BUTTON_HOVER = 0xFF315044;
-    public static final int BUTTON_DISABLED = 0xFF18211E;
-    public static final int BUTTON_PRIMARY = 0xFF356945;
+    public static final int PANEL = 0xFF101714;
+    public static final int PANEL_SOFT = 0xFF14231E;
+    public static final int BUTTON = 0xFF1F352D;
+    public static final int BUTTON_HOVER = 0xFF2C5142;
+    public static final int BUTTON_DISABLED = 0xFF17211D;
+    public static final int BUTTON_PRIMARY = 0xFF2F7049;
     public static final int BUTTON_PRIMARY_HOVER = 0xFF44875A;
     public static final int BUTTON_DANGER = 0xFF60302E;
     public static final int BUTTON_DANGER_HOVER = 0xFF7A3B37;
@@ -86,8 +86,8 @@ public final class MossyOwoUi {
 
     public static FlowLayout shell() {
         FlowLayout frame = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.fill(100));
-        frame.surface(Surface.DARK_PANEL);
-        frame.padding(Insets.of(12));
+        frame.surface(Surface.flat(0xEE0D1110));
+        frame.padding(Insets.of(10));
         frame.gap(10);
         return frame;
     }
@@ -102,9 +102,9 @@ public final class MossyOwoUi {
 
     public static FlowLayout sectionPanel(String title) {
         FlowLayout panel = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.fill(100));
-        panel.surface(Surface.panelWithInset(2));
-        panel.padding(Insets.of(10));
-        panel.gap(8);
+        panel.surface(Surface.flat(PANEL));
+        panel.padding(Insets.of(8));
+        panel.gap(6);
         panel.child(titleLabel(title));
         return panel;
     }
@@ -112,7 +112,7 @@ public final class MossyOwoUi {
     public static FlowLayout softPanel(String title, String body) {
         FlowLayout panel = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         panel.surface(Surface.flat(PANEL_SOFT));
-        panel.padding(Insets.of(10));
+        panel.padding(Insets.of(8));
         panel.gap(4);
         panel.child(titleLabel(title));
         panel.child(secondaryLabel(body));

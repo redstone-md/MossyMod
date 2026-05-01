@@ -97,7 +97,6 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         detailsPanel.horizontalSizing(Sizing.expand());
         detailsPanel.child(MossyOwoUi.mutedLabel("Check who is online and how Mossy will connect before joining."));
         detailsPanel.child(this.detailsContent);
-        detailsPanel.child(MossyOwoComponents.box(Sizing.fill(100), Sizing.expand()));
         detailsPanel.child(this.connectButton);
 
         FlowLayout body = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.expand());
