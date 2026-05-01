@@ -16,16 +16,12 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public class AddFriendScreen extends BaseMossyOwoScreen {
-    private static final int SUCCESS = 0x6BC07C;
-    private static final int WARNING = 0xD19A42;
-    private static final int DANGER = 0xD26A6A;
-
     private TextBoxComponent addressInput;
     private ButtonComponent addButton;
     private LabelComponent statusLabel;
 
     public AddFriendScreen(Screen parent) {
-        super(Component.literal("Add Peer"), parent);
+        super(Component.literal("Add Friend"), parent);
     }
 
     @Override
@@ -35,17 +31,17 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
         rootComponent.gap(10);
         rootComponent.alignment(HorizontalAlignment.CENTER, VerticalAlignment.CENTER);
 
-        FlowLayout frame = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
-        frame.surface(Surface.DARK_PANEL);
-        frame.padding(Insets.of(12));
-        frame.gap(10);
+        FlowLayout frame = MossyOwoUi.shell();
+        frame.verticalSizing(Sizing.content());
 
-        frame.child(MossyOwoUi.primaryLabel("Save a bootstrap peer in host:port form."));
-        frame.child(MossyOwoUi.mutedLabel("This goes into static peers and can also be pushed to the running mesh."));
+        frame.child(MossyOwoUi.header(
+            "Add a friend address",
+            "Use this when your friend's world does not appear automatically."
+        ));
 
-        FlowLayout section = MossyOwoUi.sectionPanel("Bootstrap Peer");
+        FlowLayout section = MossyOwoUi.sectionPanel("Friend address");
         section.verticalSizing(Sizing.content());
-        section.child(MossyOwoUi.mutedLabel("Peer address"));
+        section.child(MossyOwoUi.mutedLabel("Ask your friend for their Mossy address in host:port form."));
 
         this.addressInput = MossyOwoComponents.textBox(Sizing.fill(100));
         this.addressInput.setMaxLength(100);
@@ -54,19 +50,17 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
         this.addressInput.onChanged().subscribe(this::onAddressChanged);
         section.child(this.addressInput);
 
-        section.child(MossyOwoUi.mutedLabel("Use a reachable MOSS node. Example: 10.0.0.15:25566"));
+        section.child(MossyOwoUi.mutedLabel("Example: 10.0.0.15:41030"));
 
-        FlowLayout actions = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
-        actions.gap(6);
-        actions.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
+        FlowLayout actions = MossyOwoUi.horizontalActions();
 
-        this.addButton = MossyOwoUi.actionButton("Add Peer", button -> addFriend());
+        this.addButton = MossyOwoUi.primaryButton("Save Friend", button -> addFriend());
         this.addButton.active(false);
         actions.child(this.addButton);
-        actions.child(MossyOwoUi.actionButton("Paste", button -> pasteFromClipboard()));
+        actions.child(MossyOwoUi.compactButton("Paste", button -> pasteFromClipboard()));
         actions.child(MossyOwoUi.actionButton("Back", button -> onClose()));
 
-        this.statusLabel = MossyOwoUi.mutedLabel("Waiting for a valid host:port value.");
+        this.statusLabel = MossyOwoUi.mutedLabel("Waiting for a friend address.");
 
         frame.child(section);
         frame.child(actions);
@@ -79,16 +73,16 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
         boolean valid = text != null && isValidAddress(text.trim());
         this.addButton.active(valid);
         if (valid) {
-            setStatus("Ready to save bootstrap peer.", SUCCESS);
+            setStatus("Ready to save this friend address.", MossyOwoUi.MOSS);
         } else {
-            setStatus("Use host:port, for example 192.168.1.10:41030", WARNING);
+            setStatus("Use host:port, for example 192.168.1.10:41030", MossyOwoUi.LANTERN);
         }
     }
 
     private void pasteFromClipboard() {
         String clipboard = minecraft != null ? minecraft.keyboardHandler.getClipboard() : "";
         if (clipboard == null || clipboard.isBlank()) {
-            setStatus("Clipboard is empty.", WARNING);
+            setStatus("Clipboard is empty.", MossyOwoUi.LANTERN);
             return;
         }
 
@@ -99,16 +93,16 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
     private void addFriend() {
         String address = this.addressInput.getValue().trim();
         if (!isValidAddress(address)) {
-            setStatus("Use host:port, for example 192.168.1.10:41030", DANGER);
+            setStatus("Use host:port, for example 192.168.1.10:41030", MossyOwoUi.REDSTONE);
             return;
         }
 
         MossyConfig.getInstance().addStaticPeer(address);
         if (MossManager.getInstance().isRunning()) {
             MossManager.getInstance().addFriend(address);
-            setStatus("Peer added to running mesh.", SUCCESS);
+            setStatus("Friend address added.", MossyOwoUi.MOSS);
         } else {
-            setStatus("Peer saved to config.", SUCCESS);
+            setStatus("Friend address saved.", MossyOwoUi.MOSS);
         }
         onClose();
     }

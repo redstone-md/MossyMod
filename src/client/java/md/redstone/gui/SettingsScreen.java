@@ -17,10 +17,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public class SettingsScreen extends BaseMossyOwoScreen {
-    private static final int SUCCESS = 0x6BC07C;
-    private static final int WARNING = 0xD19A42;
-    private static final int DANGER = 0xD26A6A;
-
     private final MossyConfig config = MossyConfig.getInstance();
 
     private TextBoxComponent meshIdInput;
@@ -43,26 +39,26 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         rootComponent.padding(Insets.of(16));
         rootComponent.gap(10);
 
-        FlowLayout frame = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.fill(100));
-        frame.surface(Surface.DARK_PANEL);
-        frame.padding(Insets.of(12));
-        frame.gap(10);
+        FlowLayout frame = MossyOwoUi.shell();
 
         FlowLayout header = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
         header.gap(6);
         header.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
-        header.child(MossyOwoUi.primaryLabel("Mesh config, trackers, and bootstrap peers."));
-        header.child(MossyOwoUi.actionButton("Save", button -> saveSettings()));
-        header.child(MossyOwoUi.actionButton("Add Peer", button -> openScreen(new AddFriendScreen(this))));
+        header.child(MossyOwoUi.header(
+            "Mossy options",
+            "Keep the defaults unless a friend or server host asks you to change them."
+        ));
+        header.child(MossyOwoUi.primaryButton("Save Changes", button -> saveSettings()));
+        header.child(MossyOwoUi.actionButton("Add Friend", button -> openScreen(new AddFriendScreen(this))));
         header.child(MossyOwoUi.actionButton("Back", button -> onClose()));
 
-        FlowLayout configPanel = MossyOwoUi.sectionPanel("Config");
+        FlowLayout configPanel = MossyOwoUi.sectionPanel("Connection");
         configPanel.horizontalSizing(Sizing.fill(48));
-        configPanel.child(field("Mesh ID", "Stable identifier for your MOSS cluster", this.meshIdInput = textInput(config.meshId)));
-        configPanel.child(field("Listen Port", "Local UDP/TCP port used by the node", this.portInput = textInput(Integer.toString(config.listenPort))));
-        configPanel.child(field("Max Peers", "Upper limit for connected mesh neighbors", this.maxPeersInput = textInput(Integer.toString(config.maxPeers))));
-        configPanel.child(field("Hello Interval", "How often discovery announcements are sent", this.helloInput = textInput(Integer.toString(config.helloIntervalSeconds))));
-        configPanel.child(field("Trackers", "Comma-separated bootstrap trackers", this.trackersInput = textInput(String.join(", ", config.trackers))));
+        configPanel.child(field("Network name", "Friends must use the same network name to find each other.", this.meshIdInput = textInput(config.meshId)));
+        configPanel.child(field("Listening port", "Change this only if another app already uses the port.", this.portInput = textInput(Integer.toString(config.listenPort))));
+        configPanel.child(field("Friend limit", "Maximum simultaneous Mossy connections.", this.maxPeersInput = textInput(Integer.toString(config.maxPeers))));
+        configPanel.child(field("Discovery interval", "How often Mossy announces your world, in seconds.", this.helloInput = textInput(Integer.toString(config.helloIntervalSeconds))));
+        configPanel.child(field("Trackers", "Optional public rendezvous servers, separated by commas.", this.trackersInput = textInput(String.join(", ", config.trackers))));
 
         this.peersContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.peersContent.gap(4);
@@ -70,12 +66,12 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         peersScroll.scrollbar(ScrollContainer.Scrollbar.vanillaFlat());
         peersScroll.scrollbarThiccness(8);
 
-        this.removePeerButton = MossyOwoUi.actionButton("Remove Peer", button -> removeSelectedPeer());
+        this.removePeerButton = MossyOwoUi.dangerButton("Remove Friend", button -> removeSelectedPeer());
         this.removePeerButton.active(false);
 
-        FlowLayout peersPanel = MossyOwoUi.sectionPanel("Static Peers");
+        FlowLayout peersPanel = MossyOwoUi.sectionPanel("Saved friends");
         peersPanel.horizontalSizing(Sizing.expand());
-        peersPanel.child(MossyOwoUi.mutedLabel("Saved bootstrap addresses for the mesh."));
+        peersPanel.child(MossyOwoUi.mutedLabel("Addresses you added manually show up here."));
         peersPanel.child(peersScroll);
         peersPanel.child(this.removePeerButton);
 
@@ -84,7 +80,7 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         body.child(configPanel);
         body.child(peersPanel);
 
-        this.statusLabel = MossyOwoUi.mutedLabel("Editing config/mossy.json");
+        this.statusLabel = MossyOwoUi.mutedLabel("Changes are saved locally on this computer.");
 
         frame.child(header);
         frame.child(body);
@@ -121,8 +117,10 @@ public class SettingsScreen extends BaseMossyOwoScreen {
 
         this.peersContent.clearChildren();
         if (this.config.staticPeers.isEmpty()) {
-            this.peersContent.child(MossyOwoUi.primaryLabel("No static peers saved yet."));
-            this.peersContent.child(MossyOwoUi.mutedLabel("Use Add Peer to store a bootstrap address."));
+            this.peersContent.child(MossyOwoUi.softPanel(
+                "No saved friends",
+                "You can still discover friends automatically. Add an address only when discovery needs help."
+            ));
         } else {
             for (String peer : this.config.staticPeers) {
                 ButtonComponent button = MossyOwoComponents.button(Component.literal(peer), component -> {
@@ -131,8 +129,8 @@ public class SettingsScreen extends BaseMossyOwoScreen {
                 });
                 button.sizing(Sizing.fill(100), Sizing.fixed(20));
                 button.renderer(peer.equals(this.selectedPeer)
-                    ? ButtonComponent.Renderer.flat(0xFF2F4E7A, 0xFF3B6194, 0xFF2F4E7A)
-                    : ButtonComponent.Renderer.flat(0xFF1A2431, 0xFF243244, 0xFF141A24));
+                    ? ButtonComponent.Renderer.flat(MossyOwoUi.BUTTON_PRIMARY, MossyOwoUi.BUTTON_PRIMARY_HOVER, MossyOwoUi.BUTTON_DISABLED)
+                    : ButtonComponent.Renderer.flat(MossyOwoUi.BUTTON, MossyOwoUi.BUTTON_HOVER, MossyOwoUi.BUTTON_DISABLED));
                 this.peersContent.child(button);
             }
         }
@@ -142,26 +140,26 @@ public class SettingsScreen extends BaseMossyOwoScreen {
 
     private void removeSelectedPeer() {
         if (this.selectedPeer == null) {
-            setStatus("Select a peer to remove.", WARNING);
+            setStatus("Select a saved friend first.", MossyOwoUi.LANTERN);
             return;
         }
 
         this.config.removeStaticPeer(this.selectedPeer);
-        setStatus("Removed " + this.selectedPeer, WARNING);
+        setStatus("Removed " + this.selectedPeer, MossyOwoUi.LANTERN);
         this.selectedPeer = null;
         rebuildPeerList();
     }
 
     private void saveSettings() {
-        Integer port = parseInt(this.portInput.getValue(), 1, 65535, "Listen port must be between 1 and 65535.");
-        Integer maxPeers = parseInt(this.maxPeersInput.getValue(), 1, 500, "Max peers must be between 1 and 500.");
-        Integer hello = parseInt(this.helloInput.getValue(), 1, 300, "Hello interval must be between 1 and 300.");
+        Integer port = parseInt(this.portInput.getValue(), 1, 65535, "Listening port must be between 1 and 65535.");
+        Integer maxPeers = parseInt(this.maxPeersInput.getValue(), 1, 500, "Friend limit must be between 1 and 500.");
+        Integer hello = parseInt(this.helloInput.getValue(), 1, 300, "Discovery interval must be between 1 and 300 seconds.");
         if (port == null || maxPeers == null || hello == null) {
             return;
         }
 
         if (this.meshIdInput.getValue().isBlank()) {
-            setStatus("Mesh ID cannot be empty.", DANGER);
+            setStatus("Network name cannot be empty.", MossyOwoUi.REDSTONE);
             return;
         }
 
@@ -182,9 +180,9 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         if (moss.isRunning()) {
             moss.stop();
             moss.initialize(this.config);
-            setStatus("Settings saved and mesh restarted.", SUCCESS);
+            setStatus("Saved. Mossy restarted with the new options.", MossyOwoUi.MOSS);
         } else {
-            setStatus("Settings saved.", SUCCESS);
+            setStatus("Settings saved.", MossyOwoUi.MOSS);
         }
 
         rebuildPeerList();
@@ -194,12 +192,12 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         try {
             int parsed = Integer.parseInt(value.trim());
             if (parsed < min || parsed > max) {
-                setStatus(error, DANGER);
+                setStatus(error, MossyOwoUi.REDSTONE);
                 return null;
             }
             return parsed;
         } catch (NumberFormatException ignored) {
-            setStatus(error, DANGER);
+            setStatus(error, MossyOwoUi.REDSTONE);
             return null;
         }
     }
