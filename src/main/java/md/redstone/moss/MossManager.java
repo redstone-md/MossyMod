@@ -169,8 +169,6 @@ public final class MossManager {
         int rc = nativeApi.Moss_Publish(handle, WORLD_CHANNEL, data, data.length);
         if (rc != 0 && rc != -6) {
             Mossy.LOGGER.warn("Moss scan publish failed with code {}", rc);
-        } else {
-            MossyDebug.recordEvent("Requested world scan");
         }
     }
 

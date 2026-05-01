@@ -3,8 +3,12 @@ package md.redstone.moss;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +31,7 @@ public final class TunnelEndpoint {
     private final AtomicInteger seqNum = new AtomicInteger(0);
     private final AtomicInteger expectedReadSeq = new AtomicInteger(0);
     private final NavigableMap<Integer, byte[]> pendingFrames = new TreeMap<>();
+    private final ConcurrentMap<Integer, PendingFrame> pendingAckFrames = new ConcurrentHashMap<>();
 
     private final BlockingQueue<byte[]> readQueue = new LinkedBlockingQueue<>();
     private byte[] pendingRead = new byte[0];
@@ -74,6 +79,8 @@ public final class TunnelEndpoint {
     void handleClose() {
         closed.set(true);
         connected.set(false);
+        pendingFrames.clear();
+        pendingAckFrames.clear();
         readQueue.offer(new byte[0]);
     }
 
@@ -81,9 +88,40 @@ public final class TunnelEndpoint {
         return seqNum.getAndIncrement();
     }
 
+    void trackOutbound(int seq, byte[] data) {
+        pendingAckFrames.put(seq, new PendingFrame(seq, data, System.currentTimeMillis()));
+    }
+
+    void handleAck(int seq) {
+        pendingAckFrames.remove(seq);
+    }
+
+    List<PendingFrame> collectRetransmits(long nowMillis, long retryDelayMillis) {
+        List<PendingFrame> frames = new ArrayList<>();
+        for (PendingFrame frame : pendingAckFrames.values()) {
+            if (nowMillis - frame.lastSentAtMillis >= retryDelayMillis) {
+                frame.lastSentAtMillis = nowMillis;
+                frames.add(frame);
+            }
+        }
+        return frames;
+    }
+
     private void offerOrdered(byte[] data) {
         expectedReadSeq.incrementAndGet();
         readQueue.offer(data);
+    }
+
+    static final class PendingFrame {
+        final int seq;
+        final byte[] payload;
+        volatile long lastSentAtMillis;
+
+        PendingFrame(int seq, byte[] payload, long lastSentAtMillis) {
+            this.seq = seq;
+            this.payload = payload;
+            this.lastSentAtMillis = lastSentAtMillis;
+        }
     }
 
     public boolean isConnected() {
@@ -117,6 +155,8 @@ public final class TunnelEndpoint {
     public void close() {
         if (closed.compareAndSet(false, true)) {
             connected.set(false);
+            pendingFrames.clear();
+            pendingAckFrames.clear();
             tunnel.closeTunnel(streamId);
             readQueue.offer(new byte[0]);
         }

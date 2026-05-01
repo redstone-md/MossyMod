@@ -9,6 +9,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -26,6 +29,8 @@ public final class MossTunnel {
     private static final byte TYPE_CONNECT = 0x02;
     private static final byte TYPE_ACCEPT = 0x03;
     private static final byte TYPE_CLOSE = 0x04;
+    private static final byte TYPE_ACK = 0x05;
+    private static final long RETRANSMIT_DELAY_MS = 250L;
 
     private static final AtomicInteger streamIdCounter = new AtomicInteger(1);
 
@@ -36,6 +41,7 @@ public final class MossTunnel {
     private final Map<String, Consumer<TunnelEndpoint>> acceptHandlers = new ConcurrentHashMap<>();
     private final String listenerId = "tunnel-" + UUID.randomUUID();
 
+    private volatile ScheduledExecutorService retransmitExecutor;
     private volatile boolean running = false;
 
     public MossTunnel(MossManager moss) {
@@ -50,6 +56,17 @@ public final class MossTunnel {
 
         moss.subscribeChannel(TUNNEL_CONTROL_CHANNEL);
         moss.addRawMessageListener(listenerId, this::handleRawMessage);
+        retransmitExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread thread = new Thread(r, listenerId + "-retransmit");
+            thread.setDaemon(true);
+            return thread;
+        });
+        retransmitExecutor.scheduleAtFixedRate(
+            this::retransmitPendingFrames,
+            RETRANSMIT_DELAY_MS,
+            RETRANSMIT_DELAY_MS,
+            TimeUnit.MILLISECONDS
+        );
         running = true;
         Mossy.LOGGER.info("MossTunnel started ({})", listenerId);
     }
@@ -60,6 +77,10 @@ public final class MossTunnel {
         }
 
         running = false;
+        if (retransmitExecutor != null) {
+            retransmitExecutor.shutdownNow();
+            retransmitExecutor = null;
+        }
         moss.removeRawMessageListener(listenerId);
 
         for (TunnelEndpoint endpoint : activeTunnels.values()) {
@@ -133,7 +154,8 @@ public final class MossTunnel {
         }
 
         int seq = endpoint.nextSeq();
-        moss.publishRaw(endpoint.channel, buildFrame(TYPE_DATA, endpoint.getStreamId(), seq, data));
+        endpoint.trackOutbound(seq, data);
+        publishFrame(endpoint, TYPE_DATA, seq, data);
     }
 
     void closeTunnel(int streamId) {
@@ -143,7 +165,7 @@ public final class MossTunnel {
         }
 
         activeTunnelsByChannel.remove(endpoint.channel, endpoint);
-        moss.publishRaw(endpoint.channel, buildFrame(TYPE_CLOSE, endpoint.getStreamId(), 0, new byte[0]));
+        publishFrame(endpoint, TYPE_CLOSE, 0, new byte[0]);
         moss.unsubscribeChannel(endpoint.channel);
         Mossy.LOGGER.debug("Tunnel closed: streamId={}", streamId);
     }
@@ -174,12 +196,36 @@ public final class MossTunnel {
 
         switch (frame.type()) {
             case TYPE_ACCEPT -> endpoint.handleAccept();
-            case TYPE_DATA -> endpoint.handleData(frame.seq(), frame.payload());
+            case TYPE_DATA -> {
+                publishFrame(endpoint, TYPE_ACK, frame.seq(), new byte[0]);
+                endpoint.handleData(frame.seq(), frame.payload());
+            }
+            case TYPE_ACK -> endpoint.handleAck(frame.seq());
             case TYPE_CLOSE -> {
                 endpoint.handleClose();
                 unregisterEndpoint(endpoint);
             }
             default -> {
+            }
+        }
+    }
+
+    private void publishFrame(TunnelEndpoint endpoint, byte type, int seq, byte[] payload) {
+        moss.publishRaw(endpoint.channel, buildFrame(type, endpoint.getStreamId(), seq, payload));
+    }
+
+    private void retransmitPendingFrames() {
+        if (!running) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        for (TunnelEndpoint endpoint : activeTunnels.values()) {
+            if (!endpoint.isConnected()) {
+                continue;
+            }
+            for (TunnelEndpoint.PendingFrame frame : endpoint.collectRetransmits(now, RETRANSMIT_DELAY_MS)) {
+                publishFrame(endpoint, TYPE_DATA, frame.seq, frame.payload);
             }
         }
     }
@@ -219,7 +265,7 @@ public final class MossTunnel {
         endpoint.setConnected(true);
         registerEndpoint(endpoint);
 
-        moss.publishRaw(connect.channel(), buildFrame(TYPE_ACCEPT, connect.streamId(), 0, new byte[0]));
+        publishFrame(endpoint, TYPE_ACCEPT, 0, new byte[0]);
 
         Mossy.LOGGER.info(
             "Accepted tunnel connection: streamId={}, protocol={}, from={}",
