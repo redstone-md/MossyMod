@@ -10,6 +10,7 @@ import io.wispforest.owo.ui.core.Insets;
 import io.wispforest.owo.ui.core.Sizing;
 import io.wispforest.owo.ui.core.Surface;
 import io.wispforest.owo.ui.core.VerticalAlignment;
+import md.redstone.config.MossyConfig;
 import md.redstone.moss.DiscoveredWorlds;
 import md.redstone.moss.MossManager;
 import md.redstone.moss.P2PWorldInfo;
@@ -32,6 +33,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
     private final List<P2PWorldInfo> discoveredWorlds = new ArrayList<>();
     private FlowLayout listContent;
     private FlowLayout detailsContent;
+    private LabelComponent friendAddressLabel;
     private LabelComponent statusLabel;
     private ButtonComponent connectButton;
     private P2PWorldInfo selectedWorld;
@@ -60,6 +62,17 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         header.child(MossyOwoUi.compactButton("Refresh", button -> refreshWorlds()));
         header.child(MossyOwoUi.actionButton("Add Friend", button -> openScreen(new AddFriendScreen(this))));
         header.child(MossyOwoUi.compactButton("Settings", button -> openScreen(new SettingsScreen(this))));
+
+        FlowLayout friendAddressPanel = MossyOwoUi.sectionPanel("Your friend address");
+        friendAddressPanel.verticalSizing(Sizing.content());
+        friendAddressPanel.child(MossyOwoUi.mutedLabel("Share this with a friend so they can find your worlds."));
+        this.friendAddressLabel = MossyOwoUi.primaryLabel(friendAddressText());
+        this.friendAddressLabel.maxWidth(560);
+        friendAddressPanel.child(this.friendAddressLabel);
+        FlowLayout addressActions = MossyOwoUi.horizontalActions();
+        addressActions.child(MossyOwoUi.primaryButton("Copy Address", button -> copyFriendAddress()));
+        addressActions.child(MossyOwoUi.mutedLabel("Manual port: " + MossyConfig.getInstance().listenPort));
+        friendAddressPanel.child(addressActions);
 
         this.listContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.listContent.gap(4);
@@ -101,6 +114,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         footer.child(MossyOwoUi.actionButton("Back", button -> onClose()));
 
         frame.child(header);
+        frame.child(friendAddressPanel);
         frame.child(body);
         frame.child(footer);
 
@@ -137,6 +151,24 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         rebuildWorldList();
         rebuildDetails();
         updateStatus();
+        updateFriendAddress();
+    }
+
+    private void copyFriendAddress() {
+        String address = friendAddressValue();
+        if (minecraft != null && !address.isBlank()) {
+            minecraft.keyboardHandler.setClipboard(address);
+            if (this.statusLabel != null) {
+                this.statusLabel.text(Component.literal("Copied your friend address. Send it to the friend you want to play with."));
+                this.statusLabel.color(Color.ofRgb(MossyOwoUi.MOSS));
+            }
+        }
+    }
+
+    private void updateFriendAddress() {
+        if (this.friendAddressLabel != null) {
+            this.friendAddressLabel.text(Component.literal(friendAddressText()));
+        }
     }
 
     private void rebuildWorldList() {
@@ -296,6 +328,15 @@ public class FriendListScreen extends BaseMossyOwoScreen {
 
     private String freshnessLabel(P2PWorldInfo world) {
         return world.isStale() ? "a little while ago" : "just now";
+    }
+
+    private String friendAddressText() {
+        String address = friendAddressValue();
+        return address.isBlank() ? "Starting Mossy..." : address;
+    }
+
+    private String friendAddressValue() {
+        return MossManager.getInstance().getPublicKeyBase64();
     }
 
     private String routeTitle(P2PWorldInfo world) {

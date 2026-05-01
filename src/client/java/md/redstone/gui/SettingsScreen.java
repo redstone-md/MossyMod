@@ -24,6 +24,7 @@ public class SettingsScreen extends BaseMossyOwoScreen {
     private TextBoxComponent maxPeersInput;
     private TextBoxComponent helloInput;
     private TextBoxComponent trackersInput;
+    private LabelComponent friendAddressLabel;
     private FlowLayout peersContent;
     private LabelComponent statusLabel;
     private ButtonComponent removePeerButton;
@@ -59,6 +60,7 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         configPanel.child(field("Friend limit", "Maximum simultaneous Mossy connections.", this.maxPeersInput = textInput(Integer.toString(config.maxPeers))));
         configPanel.child(field("Discovery interval", "How often Mossy announces your world, in seconds.", this.helloInput = textInput(Integer.toString(config.helloIntervalSeconds))));
         configPanel.child(field("Trackers", "Optional public rendezvous servers, separated by commas.", this.trackersInput = textInput(String.join(", ", config.trackers))));
+        configPanel.child(friendAddressPanel());
 
         this.peersContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.peersContent.gap(4);
@@ -88,6 +90,38 @@ public class SettingsScreen extends BaseMossyOwoScreen {
 
         rootComponent.child(frame);
         rebuildPeerList();
+        updateFriendAddress();
+    }
+
+    private FlowLayout friendAddressPanel() {
+        FlowLayout panel = MossyOwoUi.softPanel(
+            "Your friend address",
+            "Copy this when someone needs to add you manually."
+        );
+        this.friendAddressLabel = MossyOwoUi.primaryLabel(friendAddressText());
+        this.friendAddressLabel.maxWidth(420);
+        panel.child(this.friendAddressLabel);
+        FlowLayout actions = MossyOwoUi.horizontalActions();
+        actions.child(MossyOwoUi.actionButton("Copy Address", button -> copyFriendAddress()));
+        actions.child(MossyOwoUi.mutedLabel("Manual port: " + config.listenPort));
+        panel.child(actions);
+        return panel;
+    }
+
+    private void copyFriendAddress() {
+        String address = friendAddressValue();
+        if (minecraft != null && !address.isBlank()) {
+            minecraft.keyboardHandler.setClipboard(address);
+            setStatus("Copied your friend address.", MossyOwoUi.MOSS);
+        } else {
+            setStatus("Friend address is not ready yet.", MossyOwoUi.LANTERN);
+        }
+    }
+
+    private void updateFriendAddress() {
+        if (this.friendAddressLabel != null) {
+            this.friendAddressLabel.text(Component.literal(friendAddressText()));
+        }
     }
 
     private TextBoxComponent textInput(String value) {
@@ -208,5 +242,14 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         }
         this.statusLabel.text(Component.literal(text));
         this.statusLabel.color(Color.ofRgb(color));
+    }
+
+    private String friendAddressText() {
+        String address = friendAddressValue();
+        return address.isBlank() ? "Starting Mossy..." : address;
+    }
+
+    private String friendAddressValue() {
+        return MossManager.getInstance().getPublicKeyBase64();
     }
 }
