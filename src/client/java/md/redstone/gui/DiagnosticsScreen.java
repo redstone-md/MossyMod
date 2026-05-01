@@ -1,10 +1,8 @@
 package md.redstone.gui;
 
 import io.wispforest.owo.ui.component.LabelComponent;
-import io.wispforest.owo.ui.component.UIComponents;
 import io.wispforest.owo.ui.container.FlowLayout;
 import io.wispforest.owo.ui.container.ScrollContainer;
-import io.wispforest.owo.ui.container.UIContainers;
 import io.wispforest.owo.ui.core.HorizontalAlignment;
 import io.wispforest.owo.ui.core.Insets;
 import io.wispforest.owo.ui.core.Sizing;
@@ -35,27 +33,27 @@ public class DiagnosticsScreen extends BaseMossyOwoScreen {
         rootComponent.padding(Insets.of(16));
         rootComponent.gap(10);
 
-        FlowLayout frame = UIContainers.verticalFlow(Sizing.fill(100), Sizing.fill(100));
+        FlowLayout frame = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.fill(100));
         frame.surface(Surface.DARK_PANEL);
         frame.padding(Insets.of(12));
         frame.gap(10);
 
-        FlowLayout header = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
+        FlowLayout header = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
         header.gap(6);
         header.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         header.child(MossyOwoUi.primaryLabel("Mesh status, discovery snapshot, and runtime events."));
         header.child(MossyOwoUi.actionButton("Refresh", button -> refreshData()));
         header.child(MossyOwoUi.actionButton("Back", button -> onClose()));
 
-        this.summaryContent = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
+        this.summaryContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.summaryContent.gap(8);
         FlowLayout summaryPanel = MossyOwoUi.sectionPanel("Summary");
         summaryPanel.horizontalSizing(Sizing.fill(42));
         summaryPanel.child(this.summaryContent);
 
-        this.eventsContent = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
+        this.eventsContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.eventsContent.gap(4);
-        ScrollContainer<FlowLayout> eventsScroll = UIContainers.verticalScroll(Sizing.fill(100), Sizing.expand(), this.eventsContent);
+        ScrollContainer<FlowLayout> eventsScroll = MossyOwoContainers.verticalScroll(Sizing.fill(100), Sizing.expand(), this.eventsContent);
         eventsScroll.scrollbar(ScrollContainer.Scrollbar.vanillaFlat());
         eventsScroll.scrollbarThiccness(8);
 
@@ -64,7 +62,7 @@ public class DiagnosticsScreen extends BaseMossyOwoScreen {
         eventsPanel.child(MossyOwoUi.mutedLabel("Newest transport and mesh events, newest last."));
         eventsPanel.child(eventsScroll);
 
-        FlowLayout body = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.expand());
+        FlowLayout body = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.expand());
         body.gap(10);
         body.child(summaryPanel);
         body.child(eventsPanel);
@@ -95,7 +93,7 @@ public class DiagnosticsScreen extends BaseMossyOwoScreen {
         this.summaryContent.child(detailLine("Discovered worlds", Integer.toString(worlds.size())));
         this.summaryContent.child(detailLine("Events buffered", Integer.toString(events.size())));
 
-        FlowLayout worldSection = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
+        FlowLayout worldSection = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         worldSection.gap(4);
         worldSection.child(MossyOwoUi.mutedLabel("World snapshot"));
         if (worlds.isEmpty()) {
@@ -121,7 +119,7 @@ public class DiagnosticsScreen extends BaseMossyOwoScreen {
     }
 
     private FlowLayout detailLine(String label, String value) {
-        FlowLayout line = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
+        FlowLayout line = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         line.gap(1);
         line.child(MossyOwoUi.mutedLabel(label));
         line.child(MossyOwoUi.primaryLabel(value));

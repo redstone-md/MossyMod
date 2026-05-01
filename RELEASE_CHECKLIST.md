@@ -2,9 +2,9 @@
 
 ## Before Tagging
 
-- Verify the mod still targets Minecraft `1.21.11`
-- Run `./gradlew.bat build` or `./gradlew build`
-- Confirm the final jar is [build/libs/mossy-1.0.0.jar](/D:/code/Mods/Minecraft/Mossy/build/libs/mossy-1.0.0.jar)
+- Verify the Stonecutter target list in [settings.gradle](/D:/code/MossyMod/settings.gradle)
+- Run `./gradlew.bat buildAllVersions` or `./gradlew buildAllVersions`
+- Confirm final jars are produced under `versions/*/build/libs/`
 - Confirm the jar contains bundled Java dependencies and `natives/...`
 
 ## Native Runtime

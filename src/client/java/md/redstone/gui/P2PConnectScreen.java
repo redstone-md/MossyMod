@@ -25,8 +25,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.PacketFlow;
 import net.minecraft.network.protocol.login.LoginProtocols;
 import net.minecraft.network.protocol.login.ServerboundHelloPacket;
-import net.minecraft.server.network.EventLoopGroupHolder;
-import net.minecraft.util.Util;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -64,6 +62,9 @@ public class P2PConnectScreen extends Screen {
         }
 
         P2PConnectScreen screen = new P2PConnectScreen(parent, world, peerId);
+        //? if <1.21.11 {
+        /*minecraft.disconnectWithProgressScreen();
+        *///?} else
         minecraft.disconnectWithProgressScreen(false);
         minecraft.prepareForMultiplayer();
         minecraft.updateReportEnvironment(ReportEnvironment.thirdParty(screen.serverData.ip));
@@ -99,7 +100,7 @@ public class P2PConnectScreen extends Screen {
                 newConnection = new Connection(PacketFlow.CLIENTBOUND);
                 ChannelFuture future = MossyMinecraftNetworking.connectClient(
                     new MossySocketAddress(peerId, "minecraft"),
-                    EventLoopGroupHolder.remote(minecraft.options.useNativeTransport()),
+                    minecraft.options.useNativeTransport(),
                     newConnection
                 );
                 channelFuture = future;
@@ -218,7 +219,7 @@ public class P2PConnectScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
-        long now = Util.getMillis();
+        long now = System.currentTimeMillis();
         if (now - lastNarration > 2000L) {
             lastNarration = now;
             minecraft.getNarrator().saySystemNow(Component.translatable("narrator.joining"));

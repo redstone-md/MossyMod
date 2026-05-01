@@ -1,6 +1,6 @@
 # MossyMod
 
-MossyMod is a Fabric mod for Minecraft `1.21.11` that adds mesh-based world discovery and experimental peer-to-peer joins on top of MOSS.
+MossyMod is a multi-version Fabric mod for recent Minecraft releases that adds mesh-based world discovery and experimental peer-to-peer joins on top of MOSS.
 
 ## Foundation
 
@@ -46,23 +46,31 @@ We intentionally update these bundled natives between builds instead of download
 Requirements:
 
 - Java `21+`
-- Fabric Loader for Minecraft `1.21.11`
+- Fabric Loader for the target Minecraft version
 
-Build:
+Build every registered Minecraft version with Stonecutter:
 
 ```bash
-./gradlew build
+./gradlew buildAllVersions
 ```
 
 Windows:
 
 ```powershell
-./gradlew.bat build
+./gradlew.bat buildAllVersions
 ```
 
-The release artifact is written to:
+Build a single target:
 
-- [build/libs/mossy-1.0.0.jar](/D:/code/Mods/Minecraft/Mossy/build/libs/mossy-1.0.0.jar)
+```powershell
+./gradlew.bat :1.21.11:build
+./gradlew.bat :1.21.9:build
+```
+
+Release artifacts are written to each version node, for example:
+
+- `versions/1.21.11/build/libs/`
+- `versions/1.21.9/build/libs/`
 
 ## Repository Layout
 

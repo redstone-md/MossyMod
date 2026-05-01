@@ -3,10 +3,8 @@ package md.redstone.gui;
 import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.LabelComponent;
 import io.wispforest.owo.ui.component.TextBoxComponent;
-import io.wispforest.owo.ui.component.UIComponents;
 import io.wispforest.owo.ui.container.FlowLayout;
 import io.wispforest.owo.ui.container.ScrollContainer;
-import io.wispforest.owo.ui.container.UIContainers;
 import io.wispforest.owo.ui.core.Color;
 import io.wispforest.owo.ui.core.HorizontalAlignment;
 import io.wispforest.owo.ui.core.Insets;
@@ -45,12 +43,12 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         rootComponent.padding(Insets.of(16));
         rootComponent.gap(10);
 
-        FlowLayout frame = UIContainers.verticalFlow(Sizing.fill(100), Sizing.fill(100));
+        FlowLayout frame = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.fill(100));
         frame.surface(Surface.DARK_PANEL);
         frame.padding(Insets.of(12));
         frame.gap(10);
 
-        FlowLayout header = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
+        FlowLayout header = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
         header.gap(6);
         header.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         header.child(MossyOwoUi.primaryLabel("Mesh config, trackers, and bootstrap peers."));
@@ -66,9 +64,9 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         configPanel.child(field("Hello Interval", "How often discovery announcements are sent", this.helloInput = textInput(Integer.toString(config.helloIntervalSeconds))));
         configPanel.child(field("Trackers", "Comma-separated bootstrap trackers", this.trackersInput = textInput(String.join(", ", config.trackers))));
 
-        this.peersContent = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
+        this.peersContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.peersContent.gap(4);
-        ScrollContainer<FlowLayout> peersScroll = UIContainers.verticalScroll(Sizing.fill(100), Sizing.expand(), this.peersContent);
+        ScrollContainer<FlowLayout> peersScroll = MossyOwoContainers.verticalScroll(Sizing.fill(100), Sizing.expand(), this.peersContent);
         peersScroll.scrollbar(ScrollContainer.Scrollbar.vanillaFlat());
         peersScroll.scrollbarThiccness(8);
 
@@ -81,7 +79,7 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         peersPanel.child(peersScroll);
         peersPanel.child(this.removePeerButton);
 
-        FlowLayout body = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.expand());
+        FlowLayout body = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.expand());
         body.gap(10);
         body.child(configPanel);
         body.child(peersPanel);
@@ -97,14 +95,14 @@ public class SettingsScreen extends BaseMossyOwoScreen {
     }
 
     private TextBoxComponent textInput(String value) {
-        TextBoxComponent input = UIComponents.textBox(Sizing.fill(100));
+        TextBoxComponent input = MossyOwoComponents.textBox(Sizing.fill(100));
         input.text(value);
         input.setMaxLength(512);
         return input;
     }
 
     private FlowLayout field(String title, String hint, TextBoxComponent input) {
-        FlowLayout field = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
+        FlowLayout field = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         field.gap(4);
         field.child(MossyOwoUi.mutedLabel(title));
         field.child(input);
@@ -127,7 +125,7 @@ public class SettingsScreen extends BaseMossyOwoScreen {
             this.peersContent.child(MossyOwoUi.mutedLabel("Use Add Peer to store a bootstrap address."));
         } else {
             for (String peer : this.config.staticPeers) {
-                ButtonComponent button = UIComponents.button(Component.literal(peer), component -> {
+                ButtonComponent button = MossyOwoComponents.button(Component.literal(peer), component -> {
                     this.selectedPeer = peer;
                     rebuildPeerList();
                 });

@@ -2,10 +2,8 @@ package md.redstone.gui;
 
 import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.LabelComponent;
-import io.wispforest.owo.ui.component.UIComponents;
 import io.wispforest.owo.ui.container.FlowLayout;
 import io.wispforest.owo.ui.container.ScrollContainer;
-import io.wispforest.owo.ui.container.UIContainers;
 import io.wispforest.owo.ui.core.Color;
 import io.wispforest.owo.ui.core.HorizontalAlignment;
 import io.wispforest.owo.ui.core.Insets;
@@ -53,17 +51,17 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         rootComponent.gap(10);
         rootComponent.alignment(HorizontalAlignment.CENTER, VerticalAlignment.CENTER);
 
-        FlowLayout frame = UIContainers.verticalFlow(Sizing.fill(100), Sizing.fill(100));
+        FlowLayout frame = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.fill(100));
         frame.surface(Surface.DARK_PANEL);
         frame.padding(Insets.of(12));
         frame.gap(10);
 
-        FlowLayout titleColumn = UIContainers.verticalFlow(Sizing.expand(), Sizing.content());
+        FlowLayout titleColumn = MossyOwoContainers.verticalFlow(Sizing.expand(), Sizing.content());
         titleColumn.gap(2);
         titleColumn.child(MossyOwoUi.primaryLabel("Mesh worlds visible to your local MOSS node"));
         titleColumn.child(MossyOwoUi.mutedLabel("Inspect reachability, then connect through P2P or direct fallback."));
 
-        FlowLayout header = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
+        FlowLayout header = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
         header.gap(6);
         header.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         header.child(titleColumn);
@@ -72,10 +70,10 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         header.child(MossyOwoUi.actionButton("Settings", button -> openScreen(new SettingsScreen(this))));
         header.child(MossyOwoUi.actionButton("Diagnostics", button -> openScreen(new DiagnosticsScreen(this))));
 
-        this.listContent = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
+        this.listContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.listContent.gap(4);
 
-        ScrollContainer<FlowLayout> worldsScroll = UIContainers.verticalScroll(Sizing.fill(100), Sizing.expand(), this.listContent);
+        ScrollContainer<FlowLayout> worldsScroll = MossyOwoContainers.verticalScroll(Sizing.fill(100), Sizing.expand(), this.listContent);
         worldsScroll.scrollbar(ScrollContainer.Scrollbar.vanillaFlat());
         worldsScroll.scrollbarThiccness(8);
         worldsScroll.padding(Insets.right(2));
@@ -85,7 +83,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         worldsPanel.child(MossyOwoUi.mutedLabel("Announcements currently visible on the mesh."));
         worldsPanel.child(worldsScroll);
 
-        this.detailsContent = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
+        this.detailsContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.detailsContent.gap(8);
 
         this.connectButton = MossyOwoUi.actionButton("Connect", button -> connectToSelected());
@@ -95,16 +93,16 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         detailsPanel.horizontalSizing(Sizing.expand());
         detailsPanel.child(MossyOwoUi.mutedLabel("A selected world will show endpoint, player count and route mode here."));
         detailsPanel.child(this.detailsContent);
-        detailsPanel.child(UIComponents.box(Sizing.fill(100), Sizing.expand()));
+        detailsPanel.child(MossyOwoComponents.box(Sizing.fill(100), Sizing.expand()));
         detailsPanel.child(this.connectButton);
 
-        FlowLayout body = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.expand());
+        FlowLayout body = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.expand());
         body.gap(10);
         body.child(worldsPanel);
         body.child(detailsPanel);
 
         this.statusLabel = MossyOwoUi.mutedLabel("Mesh booting...");
-        FlowLayout footer = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
+        FlowLayout footer = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
         footer.gap(6);
         footer.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
         footer.child(this.statusLabel.<LabelComponent>configure(label -> label.horizontalSizing(Sizing.expand())));
@@ -162,7 +160,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         }
 
         for (P2PWorldInfo world : this.discoveredWorlds) {
-            ButtonComponent button = UIComponents.button(Component.literal(worldButtonText(world)), component -> {
+            ButtonComponent button = MossyOwoComponents.button(Component.literal(worldButtonText(world)), component -> {
                 this.selectedWorld = world;
                 rebuildWorldList();
                 rebuildDetails();
@@ -255,7 +253,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
     }
 
     private FlowLayout detailLine(String label, String value) {
-        FlowLayout line = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
+        FlowLayout line = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         line.gap(1);
         line.child(MossyOwoUi.mutedLabel(label));
         line.child(MossyOwoUi.primaryLabel(value).<LabelComponent>configure(component -> component.maxWidth(400)));

@@ -3,9 +3,7 @@ package md.redstone.gui;
 import io.wispforest.owo.ui.component.ButtonComponent;
 import io.wispforest.owo.ui.component.LabelComponent;
 import io.wispforest.owo.ui.component.TextBoxComponent;
-import io.wispforest.owo.ui.component.UIComponents;
 import io.wispforest.owo.ui.container.FlowLayout;
-import io.wispforest.owo.ui.container.UIContainers;
 import io.wispforest.owo.ui.core.Color;
 import io.wispforest.owo.ui.core.HorizontalAlignment;
 import io.wispforest.owo.ui.core.Insets;
@@ -37,7 +35,7 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
         rootComponent.gap(10);
         rootComponent.alignment(HorizontalAlignment.CENTER, VerticalAlignment.CENTER);
 
-        FlowLayout frame = UIContainers.verticalFlow(Sizing.fill(100), Sizing.content());
+        FlowLayout frame = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         frame.surface(Surface.DARK_PANEL);
         frame.padding(Insets.of(12));
         frame.gap(10);
@@ -49,7 +47,7 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
         section.verticalSizing(Sizing.content());
         section.child(MossyOwoUi.mutedLabel("Peer address"));
 
-        this.addressInput = UIComponents.textBox(Sizing.fill(100));
+        this.addressInput = MossyOwoComponents.textBox(Sizing.fill(100));
         this.addressInput.setMaxLength(100);
         this.addressInput.text("");
         this.addressInput.setHint(Component.literal("192.168.1.10:41030"));
@@ -58,7 +56,7 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
 
         section.child(MossyOwoUi.mutedLabel("Use a reachable MOSS node. Example: 10.0.0.15:25566"));
 
-        FlowLayout actions = UIContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
+        FlowLayout actions = MossyOwoContainers.horizontalFlow(Sizing.fill(100), Sizing.content());
         actions.gap(6);
         actions.alignment(HorizontalAlignment.LEFT, VerticalAlignment.CENTER);
 
