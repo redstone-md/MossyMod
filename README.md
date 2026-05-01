@@ -21,9 +21,9 @@ The mod is usable for discovery, diagnostics, bootstrap-peer management, and ong
 
 The networking path is still experimental. Discovery and transport debugging are much more stable than full end-to-end gameplay compatibility, so treat releases as testing builds unless noted otherwise.
 
-## Bundled Runtime
+## Native Runtime
 
-The build is intentionally self-contained.
+The build downloads current MOSS native libraries from the latest [redstone-md/moss](https://github.com/redstone-md/moss) GitHub release before packaging.
 
 The produced mod jar bundles:
 
@@ -32,14 +32,7 @@ The produced mod jar bundles:
 - `jna-platform`
 - platform natives for `libmoss`
 
-Bundled MOSS native libraries currently live in:
-
-- [src/main/resources/natives/windows-x86_64/moss.dll](/D:/code/Mods/Minecraft/Mossy/src/main/resources/natives/windows-x86_64/moss.dll)
-- [src/main/resources/natives/linux-x86_64/libmoss.so](/D:/code/Mods/Minecraft/Mossy/src/main/resources/natives/linux-x86_64/libmoss.so)
-- [src/main/resources/natives/macos-x86_64/libmoss.dylib](/D:/code/Mods/Minecraft/Mossy/src/main/resources/natives/macos-x86_64/libmoss.dylib)
-- [src/main/resources/natives/macos-aarch64/libmoss.dylib](/D:/code/Mods/Minecraft/Mossy/src/main/resources/natives/macos-aarch64/libmoss.dylib)
-
-We intentionally update these bundled natives between builds instead of downloading them at runtime.
+Native archives are cached under each Stonecutter node's `build/moss-native-cache`, checked against the release asset SHA-256 digest, and expanded into generated resources. Native binaries are not stored in the repository.
 
 ## Development
 

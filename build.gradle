@@ -4,6 +4,12 @@ plugins {
 	id 'org.jetbrains.kotlin.jvm'
 }
 
+import groovy.json.JsonSlurper
+import java.nio.file.Files
+import java.nio.file.Path
+import java.security.MessageDigest
+import java.util.zip.ZipInputStream
+
 version = "${project.mod_version}+${sc.current.version}"
 group = project.maven_group
 
@@ -83,6 +89,116 @@ processResources {
 	filesMatching("fabric.mod.json") {
 		expand inputs.properties
 	}
+}
+
+def mossReleaseApi = 'https://api.github.com/repos/redstone-md/moss/releases/latest'
+def mossNativeTargets = [
+	'linux-x86_64'  : [asset: 'moss-linux-amd64-shared.zip', file: 'libmoss.so'],
+	'macos-aarch64' : [asset: 'moss-macos-arm64-shared.zip', file: 'libmoss.dylib'],
+	'macos-x86_64'  : [asset: 'moss-macos-amd64-shared.zip', file: 'libmoss.dylib'],
+	'windows-x86_64': [asset: 'moss-windows-amd64-shared.zip', file: 'moss.dll']
+]
+
+def downloadMossNatives = tasks.register('downloadMossNatives') {
+	group = 'build setup'
+	description = 'Downloads and verifies latest MOSS native shared libraries from GitHub releases.'
+
+	def outputDir = layout.buildDirectory.dir('generated/moss-natives')
+	def cacheDir = layout.buildDirectory.dir('moss-native-cache')
+	outputs.dir(outputDir)
+	outputs.upToDateWhen { false }
+
+	doLast {
+		def release = readJson(mossReleaseApi)
+		def assets = release.assets.collectEntries { asset -> [(asset.name): asset] }
+		def nativeRoot = outputDir.get().asFile.toPath().resolve('natives')
+		def cacheRoot = cacheDir.get().asFile.toPath()
+
+		mossNativeTargets.each { platform, target ->
+			def asset = assets[target.asset]
+			if (asset == null) {
+				throw new GradleException("MOSS release ${release.tag_name} is missing asset ${target.asset}")
+			}
+
+			def expectedSha256 = asset.digest?.toString()?.startsWith('sha256:')
+				? asset.digest.toString().substring('sha256:'.length())
+				: null
+			if (expectedSha256 == null) {
+				throw new GradleException("MOSS release asset ${target.asset} has no sha256 digest")
+			}
+
+			def zipFile = cacheRoot.resolve("${asset.id}-${target.asset}")
+			Files.createDirectories(cacheRoot)
+			if (!Files.exists(zipFile) || sha256(zipFile) != expectedSha256) {
+				downloadFile(asset.browser_download_url.toString(), zipFile)
+			}
+
+			def actualSha256 = sha256(zipFile)
+			if (actualSha256 != expectedSha256) {
+				throw new GradleException("Checksum mismatch for ${target.asset}: expected ${expectedSha256}, got ${actualSha256}")
+			}
+
+			def targetDir = nativeRoot.resolve(platform)
+			def targetFile = targetDir.resolve(target.file)
+			Files.createDirectories(targetDir)
+			extractZipEntry(zipFile, target.file, targetFile)
+		}
+
+		logger.lifecycle("Downloaded MOSS natives from ${release.html_url}")
+	}
+}
+
+sourceSets {
+	main {
+		resources.srcDir(downloadMossNatives.map { it.outputs.files.singleFile })
+	}
+}
+
+static def readJson(String url) {
+	def connection = new URL(url).openConnection()
+	connection.setRequestProperty('Accept', 'application/vnd.github+json')
+	connection.setRequestProperty('User-Agent', 'MossyMod Gradle build')
+	connection.inputStream.withCloseable { input ->
+		return new JsonSlurper().parse(input)
+	}
+}
+
+static void downloadFile(String url, Path target) {
+	def connection = new URL(url).openConnection()
+	connection.setRequestProperty('User-Agent', 'MossyMod Gradle build')
+	connection.inputStream.withCloseable { input ->
+		Files.copy(input, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+	}
+}
+
+static String sha256(Path file) {
+	def digest = MessageDigest.getInstance('SHA-256')
+	Files.newInputStream(file).withCloseable { input ->
+		byte[] buffer = new byte[8192]
+		for (int read = input.read(buffer); read != -1; read = input.read(buffer)) {
+			digest.update(buffer, 0, read)
+		}
+	}
+	return digest.digest().collect { String.format('%02x', it) }.join()
+}
+
+static void extractZipEntry(Path zipFile, String expectedFileName, Path targetFile) {
+	boolean extracted = false
+	Files.newInputStream(zipFile).withCloseable { fileInput ->
+		new ZipInputStream(fileInput).withCloseable { zipInput ->
+			for (def entry = zipInput.nextEntry; entry != null; entry = zipInput.nextEntry) {
+				if (!entry.directory && Path.of(entry.name).fileName.toString() == expectedFileName) {
+					Files.copy(zipInput, targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+					extracted = true
+					break
+				}
+			}
+		}
+	}
+	if (extracted) {
+		return
+	}
+	throw new GradleException("${zipFile.fileName} does not contain ${expectedFileName}")
 }
 
 tasks.withType(JavaCompile).configureEach {

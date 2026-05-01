@@ -9,9 +9,10 @@
 
 ## Native Runtime
 
-- Replace bundled `libmoss` binaries in [src/main/resources/natives](/D:/code/Mods/Minecraft/Mossy/src/main/resources/natives) when the embedded MOSS runtime changes
-- Test at least the platforms whose binaries were updated
-- Keep the native filenames stable unless the loader is updated too
+- Confirm `downloadMossNatives` downloads from the expected latest [redstone-md/moss](https://github.com/redstone-md/moss) release
+- Confirm downloaded archives pass the GitHub release asset SHA-256 digest check
+- Confirm final jars contain `natives/linux-x86_64`, `natives/windows-x86_64`, `natives/macos-x86_64`, and `natives/macos-aarch64`
+- Keep generated native resource filenames stable unless [MossNativeLoader](/D:/code/MossyMod/src/main/java/md/redstone/moss/MossNativeLoader.java) is updated too
 
 ## Smoke Tests
 
