@@ -1,5 +1,6 @@
 package net.minecraft.client.gui.screens.multiplayer;
 
+import md.redstone.gui.MossyTime;
 import md.redstone.gui.P2PConnectScreen;
 import md.redstone.gui.P2PConnectionManager;
 import md.redstone.moss.P2PWorldInfo;
@@ -45,10 +46,11 @@ public final class MossyWorldEntry extends ServerSelectionList.NetworkServerEntr
         graphics.fill(x + 7, y + 15, x + 21, y + 18, ICON_ACCENT);
         graphics.fill(x + 7, y + 22, x + 17, y + 25, ICON_ACCENT);
 
+        Component freshness = freshnessLabel();
         graphics.drawString(font, Component.literal(world.worldName()), textX, y + 1, TEXT_PRIMARY);
         graphics.drawString(font, statusLine(), textX, y + 13, TEXT_SECONDARY);
         graphics.drawString(font, routeLine(), textX, y + 24, TEXT_MUTED);
-        graphics.drawString(font, freshnessLabel(), right - 58, y + 13, TEXT_SECONDARY);
+        graphics.drawString(font, freshness, right - font.width(freshness), y + 13, TEXT_SECONDARY);
     }
 
     @Override
@@ -113,10 +115,6 @@ public final class MossyWorldEntry extends ServerSelectionList.NetworkServerEntr
     }
 
     private Component freshnessLabel() {
-        long ageSeconds = Math.max(0L, (System.currentTimeMillis() - world.timestamp()) / 1000L);
-        if (ageSeconds <= 1L) {
-            return Component.translatable("mossy.serverList.online");
-        }
-        return Component.translatable("mossy.serverList.secondsAgo", ageSeconds);
+        return MossyTime.age(world.timestamp());
     }
 }

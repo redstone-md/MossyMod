@@ -284,7 +284,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
     }
 
     private Component freshnessLabel(P2PWorldInfo world) {
-        return world.isStale() ? MossyText.tr("friends.freshness.stale") : MossyText.tr("friends.freshness.now");
+        return MossyTime.age(world.timestamp());
     }
 
     private Component routeTitle(P2PWorldInfo world) {
