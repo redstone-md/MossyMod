@@ -32,7 +32,6 @@ public class FriendListScreen extends BaseMossyOwoScreen {
     private final List<P2PWorldInfo> discoveredWorlds = new ArrayList<>();
     private FlowLayout listContent;
     private FlowLayout detailsContent;
-    private LabelComponent friendAddressLabel;
     private LabelComponent statusLabel;
     private ButtonComponent connectButton;
     private P2PWorldInfo selectedWorld;
@@ -60,19 +59,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         header.child(titleColumn);
         header.child(MossyOwoUi.compactButton("Refresh", button -> refreshWorlds()));
         header.child(MossyOwoUi.actionButton("Add Friend", button -> openScreen(new AddFriendScreen(this))));
-        header.child(MossyOwoUi.compactButton("Settings", button -> openScreen(new SettingsScreen(this))));
-
-        FlowLayout friendAddressPanel = MossyOwoUi.sectionPanel("Your join code");
-        friendAddressPanel.verticalSizing(Sizing.content());
-        friendAddressPanel.child(MossyOwoUi.mutedLabel("Share this after opening your world to LAN. Your friend can paste it in Add Friend and join directly."));
-        this.friendAddressLabel = MossyOwoUi.primaryLabel(friendAddressText());
-        this.friendAddressLabel.maxWidth(560);
-        friendAddressPanel.child(this.friendAddressLabel);
-        FlowLayout addressActions = MossyOwoUi.horizontalActions();
-        addressActions.child(MossyOwoUi.primaryButton("Copy Join Code", button -> copyFriendAddress()));
-        addressActions.child(MossyOwoUi.mutedLabel(FriendAccessInfo.manualPortText()));
-        friendAddressPanel.child(addressActions);
-        friendAddressPanel.child(MossyOwoUi.mutedLabel(FriendAccessInfo.manualAddressHint()));
+        header.child(MossyOwoUi.compactButton("My Code", button -> openScreen(new SettingsScreen(this))));
 
         this.listContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.listContent.gap(4);
@@ -113,7 +100,6 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         footer.child(MossyOwoUi.actionButton("Back", button -> onClose()));
 
         frame.child(header);
-        frame.child(friendAddressPanel);
         frame.child(body);
         frame.child(footer);
 
@@ -150,24 +136,6 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         rebuildWorldList();
         rebuildDetails();
         updateStatus();
-        updateFriendAddress();
-    }
-
-    private void copyFriendAddress() {
-        String address = friendAddressValue();
-        if (minecraft != null && !address.isBlank()) {
-            minecraft.keyboardHandler.setClipboard(address);
-            if (this.statusLabel != null) {
-                this.statusLabel.text(Component.literal("Copied your join code. Your friend can paste it in Add Friend after your LAN world is open."));
-                this.statusLabel.color(Color.ofRgb(MossyOwoUi.MOSS));
-            }
-        }
-    }
-
-    private void updateFriendAddress() {
-        if (this.friendAddressLabel != null) {
-            this.friendAddressLabel.text(Component.literal(friendAddressText()));
-        }
     }
 
     private void rebuildWorldList() {
@@ -329,13 +297,6 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         return world.isStale() ? "a little while ago" : "just now";
     }
 
-    private String friendAddressText() {
-        return FriendAccessInfo.friendCodeText();
-    }
-
-    private String friendAddressValue() {
-        return FriendAccessInfo.shareCodeValue();
-    }
 
     private String routeTitle(P2PWorldInfo world) {
         if (world.ownerPublicKey() != null && !world.ownerPublicKey().isBlank()) {
