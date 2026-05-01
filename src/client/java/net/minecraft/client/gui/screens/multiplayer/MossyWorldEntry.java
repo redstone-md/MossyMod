@@ -10,9 +10,10 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.client.server.LanServer;
 import net.minecraft.network.chat.Component;
 
-public final class MossyWorldEntry extends ServerSelectionList.Entry {
+public final class MossyWorldEntry extends ServerSelectionList.NetworkServerEntry {
     private static final int ICON_SIZE = 32;
     private static final int ICON_BACKGROUND = 0xFF173026;
     private static final int ICON_ACCENT = 0xFF76C779;
@@ -25,6 +26,7 @@ public final class MossyWorldEntry extends ServerSelectionList.Entry {
     private final P2PWorldInfo world;
 
     public MossyWorldEntry(JoinMultiplayerScreen screen, P2PWorldInfo world) {
+        super(screen, new LanServer(world.worldName(), stableAddress(world)));
         this.screen = screen;
         this.minecraft = Minecraft.getInstance();
         this.world = world;
@@ -86,16 +88,11 @@ public final class MossyWorldEntry extends ServerSelectionList.Entry {
         return Component.literal(world.worldName() + ", Mossy world, " + statusLine());
     }
 
-    @Override
-    boolean matches(ServerSelectionList.Entry entry) {
-        return entry instanceof MossyWorldEntry mossyEntry && worldKey().equals(mossyEntry.worldKey());
-    }
-
-    public String worldKey() {
+    private static String stableAddress(P2PWorldInfo world) {
         if (world.ownerPublicKey() != null && !world.ownerPublicKey().isBlank()) {
-            return world.ownerPublicKey();
+            return "mossy://" + world.ownerPublicKey() + "/minecraft";
         }
-        return world.worldName() + "@" + world.hostAddress() + ":" + world.port();
+        return world.hostAddress() + ":" + world.port();
     }
 
     private String statusLine() {

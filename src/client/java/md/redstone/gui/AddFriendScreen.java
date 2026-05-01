@@ -113,7 +113,12 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
     }
 
     private void joinByFriendCode(String peerId) {
-        if (!MossManager.getInstance().isRunning()) {
+        MossManager moss = MossManager.getInstance();
+        if (peerId.equals(moss.getPublicKeyBase64())) {
+            setStatus("This is your own join code. Ask your friend to copy theirs.", MossyOwoUi.LANTERN);
+            return;
+        }
+        if (!moss.isRunning()) {
             setStatus("Mossy is still starting. Try again in a moment.", MossyOwoUi.LANTERN);
             return;
         }
