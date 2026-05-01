@@ -174,7 +174,7 @@ public final class MossTunnel {
 
         switch (frame.type()) {
             case TYPE_ACCEPT -> endpoint.handleAccept();
-            case TYPE_DATA -> endpoint.handleData(frame.payload());
+            case TYPE_DATA -> endpoint.handleData(frame.seq(), frame.payload());
             case TYPE_CLOSE -> {
                 endpoint.handleClose();
                 unregisterEndpoint(endpoint);

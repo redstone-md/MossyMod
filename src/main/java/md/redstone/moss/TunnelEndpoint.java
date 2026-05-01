@@ -3,6 +3,8 @@ package md.redstone.moss;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -23,6 +25,8 @@ public final class TunnelEndpoint {
     private final AtomicBoolean connected = new AtomicBoolean(false);
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicInteger seqNum = new AtomicInteger(0);
+    private final AtomicInteger expectedReadSeq = new AtomicInteger(0);
+    private final NavigableMap<Integer, byte[]> pendingFrames = new TreeMap<>();
 
     private final BlockingQueue<byte[]> readQueue = new LinkedBlockingQueue<>();
     private byte[] pendingRead = new byte[0];
@@ -47,8 +51,24 @@ public final class TunnelEndpoint {
         setConnected(true);
     }
 
-    void handleData(byte[] data) {
-        readQueue.offer(data);
+    synchronized void handleData(int seq, byte[] data) {
+        int expected = expectedReadSeq.get();
+        if (seq < expected) {
+            return;
+        }
+        if (seq > expected) {
+            pendingFrames.putIfAbsent(seq, data);
+            return;
+        }
+
+        offerOrdered(data);
+        while (true) {
+            byte[] next = pendingFrames.remove(expectedReadSeq.get());
+            if (next == null) {
+                return;
+            }
+            offerOrdered(next);
+        }
     }
 
     void handleClose() {
@@ -59,6 +79,11 @@ public final class TunnelEndpoint {
 
     int nextSeq() {
         return seqNum.getAndIncrement();
+    }
+
+    private void offerOrdered(byte[] data) {
+        expectedReadSeq.incrementAndGet();
+        readQueue.offer(data);
     }
 
     public boolean isConnected() {

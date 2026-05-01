@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 public final class MossManager {
     private static final String WORLD_CHANNEL = "mossy-worlds";
     private static final String HELLO_PREFIX = "mossy-hello:";
+    private static final String SCAN_PREFIX = "mossy-scan:";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Type MAP_TYPE = new TypeToken<Map<String, Object>>() {}.getType();
     
@@ -103,6 +104,7 @@ public final class MossManager {
         
         scheduler = Executors.newSingleThreadScheduledExecutor();
         scheduler.scheduleAtFixedRate(this::publishHello, 0L, config.helloIntervalSeconds, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::requestWorldScan, 1L, Math.max(5, config.helloIntervalSeconds), TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(DiscoveredWorlds::pruneStale, 30L, 30L, TimeUnit.SECONDS);
         
         Mossy.LOGGER.info("Started MOSS mesh for world discovery on channel {}", WORLD_CHANNEL);
@@ -152,7 +154,26 @@ public final class MossManager {
     public P2PWorldInfo getPublishedWorld() {
         return currentWorld;
     }
-    
+
+    public void requestWorldScan() {
+        if (!running || nativeApi == null || handle <= 0) {
+            return;
+        }
+        if (currentWorld != null) {
+            publishHello();
+            return;
+        }
+
+        String scanPayload = SCAN_PREFIX + System.currentTimeMillis();
+        byte[] data = scanPayload.getBytes(StandardCharsets.UTF_8);
+        int rc = nativeApi.Moss_Publish(handle, WORLD_CHANNEL, data, data.length);
+        if (rc != 0 && rc != -6) {
+            Mossy.LOGGER.warn("Moss scan publish failed with code {}", rc);
+        } else {
+            MossyDebug.recordEvent("Requested world scan");
+        }
+    }
+
     public void addWorldListener(String id, Consumer<P2PWorldInfo> listener) {
         worldListeners.put(id, listener);
     }
@@ -246,7 +267,7 @@ public final class MossManager {
         
         eventCallback = (eventType, detailJson) -> {
             if (eventType == 1) { // EventPeerJoined
-                publishHello();
+                requestWorldScan();
                 MossyDebug.recordEvent("Mesh peer joined");
             }
             Mossy.LOGGER.debug("MOSS event {}: {}", eventType, detailJson);
@@ -267,7 +288,18 @@ public final class MossManager {
             return;
         }
         
-        String helloPayload = HELLO_PREFIX + GSON.toJson(currentWorld.toMap());
+        P2PWorldInfo world = new P2PWorldInfo(
+            currentWorld.worldName(),
+            currentWorld.hostAddress(),
+            currentWorld.port(),
+            currentWorld.motd(),
+            currentWorld.playerCount(),
+            currentWorld.maxPlayers(),
+            System.currentTimeMillis(),
+            currentWorld.ownerPublicKey()
+        );
+        currentWorld = world;
+        String helloPayload = HELLO_PREFIX + GSON.toJson(world.toMap());
         byte[] data = helloPayload.getBytes(StandardCharsets.UTF_8);
         
         int rc = nativeApi.Moss_Publish(handle, WORLD_CHANNEL, data, data.length);
@@ -301,6 +333,11 @@ public final class MossManager {
         if (WORLD_CHANNEL.equals(channel)) {
             String message = new String(payload, StandardCharsets.UTF_8);
             
+            if (message.startsWith(SCAN_PREFIX)) {
+                publishHello();
+                return;
+            }
+
             if (message.startsWith(HELLO_PREFIX)) {
                 try {
                     String json = message.substring(HELLO_PREFIX.length());

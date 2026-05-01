@@ -2,6 +2,7 @@ package md.redstone.mixin.client;
 
 import md.redstone.gui.FriendListScreen;
 import md.redstone.moss.DiscoveredWorlds;
+import md.redstone.moss.MossManager;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
@@ -25,11 +26,19 @@ public abstract class JoinMultiplayerScreenMixin extends Screen {
 
     @Inject(method = "init", at = @At("RETURN"))
     private void mossy$addFriendsButton(CallbackInfo ci) {
+        Button scanButton = Button.builder(
+            Component.translatable("mossy.multiplayer.scan"),
+            btn -> {
+                MossManager.getInstance().requestWorldScan();
+                mossy$refreshServerListIfNeeded(true);
+            }
+        ).bounds(width - 222, 8, 104, 20).build();
         Button friendsButton = Button.builder(
-            Component.literal("Mossy"),
+            Component.translatable("mossy.multiplayer.open"),
             btn -> minecraft.setScreen(new FriendListScreen(this))
         ).bounds(width - 112, 8, 104, 20).build();
 
+        addRenderableWidget(scanButton);
         addRenderableWidget(friendsButton);
         mossy$refreshServerListIfNeeded(true);
     }
