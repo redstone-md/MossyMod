@@ -73,7 +73,7 @@ public class SettingsScreen extends BaseMossyOwoScreen {
 
         FlowLayout peersPanel = MossyOwoUi.sectionPanel("Saved friends");
         peersPanel.horizontalSizing(Sizing.expand());
-        peersPanel.child(MossyOwoUi.mutedLabel("Addresses you added manually show up here."));
+        peersPanel.child(MossyOwoUi.mutedLabel("Network addresses you added manually show up here."));
         peersPanel.child(peersScroll);
         peersPanel.child(this.removePeerButton);
 
@@ -95,16 +95,17 @@ public class SettingsScreen extends BaseMossyOwoScreen {
 
     private FlowLayout friendAddressPanel() {
         FlowLayout panel = MossyOwoUi.softPanel(
-            "Your friend address",
-            "Copy this when someone needs to add you manually."
+            "Your join code",
+            "Share this after opening your world to LAN. Your friend can paste it in Add Friend and join directly."
         );
         this.friendAddressLabel = MossyOwoUi.primaryLabel(friendAddressText());
         this.friendAddressLabel.maxWidth(420);
         panel.child(this.friendAddressLabel);
         FlowLayout actions = MossyOwoUi.horizontalActions();
-        actions.child(MossyOwoUi.actionButton("Copy Address", button -> copyFriendAddress()));
-        actions.child(MossyOwoUi.mutedLabel("Manual port: " + config.listenPort));
+        actions.child(MossyOwoUi.actionButton("Copy Join Code", button -> copyFriendAddress()));
+        actions.child(MossyOwoUi.mutedLabel(FriendAccessInfo.manualPortText()));
         panel.child(actions);
+        panel.child(MossyOwoUi.mutedLabel(FriendAccessInfo.manualAddressHint()));
         return panel;
     }
 
@@ -112,9 +113,9 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         String address = friendAddressValue();
         if (minecraft != null && !address.isBlank()) {
             minecraft.keyboardHandler.setClipboard(address);
-            setStatus("Copied your friend address.", MossyOwoUi.MOSS);
+            setStatus("Copied your join code. Your friend can paste it in Add Friend after your LAN world is open.", MossyOwoUi.MOSS);
         } else {
-            setStatus("Friend address is not ready yet.", MossyOwoUi.LANTERN);
+            setStatus("Join code is not ready yet.", MossyOwoUi.LANTERN);
         }
     }
 
@@ -153,7 +154,7 @@ public class SettingsScreen extends BaseMossyOwoScreen {
         if (this.config.staticPeers.isEmpty()) {
             this.peersContent.child(MossyOwoUi.softPanel(
                 "No saved friends",
-                "You can still discover friends automatically. Add an address only when discovery needs help."
+                "You can still discover friends automatically. Add a network address only when discovery needs help."
             ));
         } else {
             for (String peer : this.config.staticPeers) {
@@ -245,11 +246,10 @@ public class SettingsScreen extends BaseMossyOwoScreen {
     }
 
     private String friendAddressText() {
-        String address = friendAddressValue();
-        return address.isBlank() ? "Starting Mossy..." : address;
+        return FriendAccessInfo.friendCodeText();
     }
 
     private String friendAddressValue() {
-        return MossManager.getInstance().getPublicKeyBase64();
+        return FriendAccessInfo.shareCodeValue();
     }
 }

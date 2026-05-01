@@ -12,6 +12,7 @@ import io.wispforest.owo.ui.core.Surface;
 import io.wispforest.owo.ui.core.VerticalAlignment;
 import md.redstone.config.MossyConfig;
 import md.redstone.moss.MossManager;
+import md.redstone.moss.P2PWorldInfo;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -35,34 +36,34 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
         frame.verticalSizing(Sizing.content());
 
         frame.child(MossyOwoUi.header(
-            "Add a friend address",
-            "Use this when your friend's world does not appear automatically."
+            "Join a friend",
+            "Paste their Mossy join code, or add a network address when discovery needs help."
         ));
 
-        FlowLayout section = MossyOwoUi.sectionPanel("Friend address");
-        section.verticalSizing(Sizing.content());
-        section.child(MossyOwoUi.mutedLabel("Ask your friend for their Mossy address in host:port form."));
+        FlowLayout codeSection = MossyOwoUi.sectionPanel("Friend code or network address");
+        codeSection.verticalSizing(Sizing.content());
+        codeSection.child(MossyOwoUi.mutedLabel("A join code connects to a friend's open LAN world through Mossy. A network address is a host:port fallback."));
 
         this.addressInput = MossyOwoComponents.textBox(Sizing.fill(100));
-        this.addressInput.setMaxLength(100);
+        this.addressInput.setMaxLength(140);
         this.addressInput.text("");
-        this.addressInput.setHint(Component.literal("192.168.1.10:41030"));
+        this.addressInput.setHint(Component.literal("mossy:friend-code or 203.0.113.42:41030"));
         this.addressInput.onChanged().subscribe(this::onAddressChanged);
-        section.child(this.addressInput);
+        codeSection.child(this.addressInput);
 
-        section.child(MossyOwoUi.mutedLabel("Example: 10.0.0.15:41030"));
+        codeSection.child(MossyOwoUi.mutedLabel("Ask your friend to open their world to LAN first, then paste the code they copied from Mossy."));
 
         FlowLayout actions = MossyOwoUi.horizontalActions();
 
-        this.addButton = MossyOwoUi.primaryButton("Save Friend", button -> addFriend());
+        this.addButton = MossyOwoUi.primaryButton("Continue", button -> useFriendInput());
         this.addButton.active(false);
         actions.child(this.addButton);
         actions.child(MossyOwoUi.compactButton("Paste", button -> pasteFromClipboard()));
         actions.child(MossyOwoUi.actionButton("Back", button -> onClose()));
 
-        this.statusLabel = MossyOwoUi.mutedLabel("Waiting for a friend address.");
+        this.statusLabel = MossyOwoUi.mutedLabel("Waiting for a join code or network address.");
 
-        frame.child(section);
+        frame.child(codeSection);
         frame.child(actions);
         frame.child(this.statusLabel);
 
@@ -70,12 +71,17 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
     }
 
     private void onAddressChanged(String text) {
-        boolean valid = text != null && isValidAddress(text.trim());
-        this.addButton.active(valid);
-        if (valid) {
-            setStatus("Ready to save this friend address.", MossyOwoUi.MOSS);
+        String value = text != null ? text.trim() : "";
+        boolean joinCode = FriendAccessInfo.isValidFriendCode(value);
+        boolean networkAddress = isValidAddress(value);
+        this.addButton.active(joinCode || networkAddress);
+
+        if (joinCode) {
+            setStatus("Ready to join by Mossy code. Your friend must keep the LAN world open.", MossyOwoUi.MOSS);
+        } else if (networkAddress) {
+            setStatus("Ready to save this network address for discovery fallback.", MossyOwoUi.MOSS);
         } else {
-            setStatus("Use host:port, for example 192.168.1.10:41030", MossyOwoUi.LANTERN);
+            setStatus("Paste a Mossy join code, or use host:port like 203.0.113.42:41030", MossyOwoUi.LANTERN);
         }
     }
 
@@ -90,19 +96,48 @@ public class AddFriendScreen extends BaseMossyOwoScreen {
         onAddressChanged(this.addressInput.getValue());
     }
 
-    private void addFriend() {
-        String address = this.addressInput.getValue().trim();
-        if (!isValidAddress(address)) {
-            setStatus("Use host:port, for example 192.168.1.10:41030", MossyOwoUi.REDSTONE);
+    private void useFriendInput() {
+        String value = this.addressInput.getValue().trim();
+        String peerId = FriendAccessInfo.parseFriendCode(value);
+        if (!peerId.isBlank()) {
+            joinByFriendCode(peerId);
             return;
         }
 
+        if (isValidAddress(value)) {
+            saveNetworkAddress(value);
+            return;
+        }
+
+        setStatus("Paste a Mossy join code, or use host:port like 203.0.113.42:41030", MossyOwoUi.REDSTONE);
+    }
+
+    private void joinByFriendCode(String peerId) {
+        if (!MossManager.getInstance().isRunning()) {
+            setStatus("Mossy is still starting. Try again in a moment.", MossyOwoUi.LANTERN);
+            return;
+        }
+
+        P2PWorldInfo world = new P2PWorldInfo(
+            "Friend's LAN world",
+            "",
+            25565,
+            "Joined by Mossy code",
+            0,
+            20,
+            System.currentTimeMillis(),
+            peerId
+        );
+        P2PConnectScreen.startConnecting(this, minecraft, world);
+    }
+
+    private void saveNetworkAddress(String address) {
         MossyConfig.getInstance().addStaticPeer(address);
         if (MossManager.getInstance().isRunning()) {
             MossManager.getInstance().addFriend(address);
-            setStatus("Friend address added.", MossyOwoUi.MOSS);
+            setStatus("Network address added.", MossyOwoUi.MOSS);
         } else {
-            setStatus("Friend address saved.", MossyOwoUi.MOSS);
+            setStatus("Network address saved.", MossyOwoUi.MOSS);
         }
         onClose();
     }

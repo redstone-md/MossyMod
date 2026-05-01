@@ -10,7 +10,6 @@ import io.wispforest.owo.ui.core.Insets;
 import io.wispforest.owo.ui.core.Sizing;
 import io.wispforest.owo.ui.core.Surface;
 import io.wispforest.owo.ui.core.VerticalAlignment;
-import md.redstone.config.MossyConfig;
 import md.redstone.moss.DiscoveredWorlds;
 import md.redstone.moss.MossManager;
 import md.redstone.moss.P2PWorldInfo;
@@ -63,16 +62,17 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         header.child(MossyOwoUi.actionButton("Add Friend", button -> openScreen(new AddFriendScreen(this))));
         header.child(MossyOwoUi.compactButton("Settings", button -> openScreen(new SettingsScreen(this))));
 
-        FlowLayout friendAddressPanel = MossyOwoUi.sectionPanel("Your friend address");
+        FlowLayout friendAddressPanel = MossyOwoUi.sectionPanel("Your join code");
         friendAddressPanel.verticalSizing(Sizing.content());
-        friendAddressPanel.child(MossyOwoUi.mutedLabel("Share this with a friend so they can find your worlds."));
+        friendAddressPanel.child(MossyOwoUi.mutedLabel("Share this after opening your world to LAN. Your friend can paste it in Add Friend and join directly."));
         this.friendAddressLabel = MossyOwoUi.primaryLabel(friendAddressText());
         this.friendAddressLabel.maxWidth(560);
         friendAddressPanel.child(this.friendAddressLabel);
         FlowLayout addressActions = MossyOwoUi.horizontalActions();
-        addressActions.child(MossyOwoUi.primaryButton("Copy Address", button -> copyFriendAddress()));
-        addressActions.child(MossyOwoUi.mutedLabel("Manual port: " + MossyConfig.getInstance().listenPort));
+        addressActions.child(MossyOwoUi.primaryButton("Copy Join Code", button -> copyFriendAddress()));
+        addressActions.child(MossyOwoUi.mutedLabel(FriendAccessInfo.manualPortText()));
         friendAddressPanel.child(addressActions);
+        friendAddressPanel.child(MossyOwoUi.mutedLabel(FriendAccessInfo.manualAddressHint()));
 
         this.listContent = MossyOwoContainers.verticalFlow(Sizing.fill(100), Sizing.content());
         this.listContent.gap(4);
@@ -159,7 +159,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         if (minecraft != null && !address.isBlank()) {
             minecraft.keyboardHandler.setClipboard(address);
             if (this.statusLabel != null) {
-                this.statusLabel.text(Component.literal("Copied your friend address. Send it to the friend you want to play with."));
+                this.statusLabel.text(Component.literal("Copied your join code. Your friend can paste it in Add Friend after your LAN world is open."));
                 this.statusLabel.color(Color.ofRgb(MossyOwoUi.MOSS));
             }
         }
@@ -180,7 +180,7 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         if (this.discoveredWorlds.isEmpty()) {
             this.listContent.child(MossyOwoUi.softPanel(
                 "No shared worlds yet",
-                "Ask a friend to open their world to LAN with Mossy running, or add a friend address."
+                "Ask a friend to open their world to LAN with Mossy running, or add their network address if discovery needs help."
             ));
             return;
         }
@@ -331,12 +331,11 @@ public class FriendListScreen extends BaseMossyOwoScreen {
     }
 
     private String friendAddressText() {
-        String address = friendAddressValue();
-        return address.isBlank() ? "Starting Mossy..." : address;
+        return FriendAccessInfo.friendCodeText();
     }
 
     private String friendAddressValue() {
-        return MossManager.getInstance().getPublicKeyBase64();
+        return FriendAccessInfo.shareCodeValue();
     }
 
     private String routeTitle(P2PWorldInfo world) {
@@ -356,6 +355,6 @@ public class FriendListScreen extends BaseMossyOwoScreen {
         if (P2PConnectionManager.INSTANCE.canConnectDirectly(world)) {
             return "Mossy found a normal address for this world and can use it as a fallback.";
         }
-        return "Keep Mossy open or add a friend address so this world can be reached.";
+        return "Keep Mossy open or add a network address so this world can be reached.";
     }
 }

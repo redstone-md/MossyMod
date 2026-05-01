@@ -88,7 +88,7 @@ public final class MossManager {
             throw new IllegalStateException("Moss_Subscribe failed with code " + rc);
         }
         
-        // Connect to static peers (friend codes)
+        // Connect to static bootstrap peers (host:port).
         for (String peer : config.staticPeers) {
             if (peer != null && !peer.isBlank()) {
                 int connectRc = nativeApi.Moss_Connect(handle, peer);
@@ -168,20 +168,22 @@ public final class MossManager {
         return MossNativeLoader.readOwnedString(nativeApi.Moss_GetMeshInfo(handle));
     }
     
-    public boolean addFriend(String peerId) {
+    public boolean addFriend(String peerAddress) {
         if (!running || nativeApi == null || handle <= 0) {
             return false;
         }
-        if (peerId == null || peerId.isBlank()) {
+        if (peerAddress == null || peerAddress.isBlank()) {
             return false;
         }
-        int rc = nativeApi.Moss_Connect(handle, peerId.trim());
+
+        String address = peerAddress.trim();
+        int rc = nativeApi.Moss_Connect(handle, address);
         if (rc != 0 && rc != -10) {
-            Mossy.LOGGER.warn("Moss_Connect to friend {} failed with code {}", peerId.substring(0, Math.min(8, peerId.length())), rc);
+            Mossy.LOGGER.warn("Moss_Connect to bootstrap peer {} failed with code {}", address, rc);
             return false;
         }
-        Mossy.LOGGER.info("Added friend: {}", peerId.substring(0, Math.min(8, peerId.length())));
-        MossyDebug.recordEvent("Added bootstrap peer " + peerId.substring(0, Math.min(8, peerId.length())));
+        Mossy.LOGGER.info("Added bootstrap peer: {}", address);
+        MossyDebug.recordEvent("Added bootstrap peer " + address);
         return true;
     }
     
