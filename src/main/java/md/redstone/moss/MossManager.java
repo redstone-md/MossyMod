@@ -145,6 +145,11 @@ public final class MossManager {
         MossyDebug.recordEvent("Published world " + world.worldName());
     }
     
+    public void refreshPublishedWorld(P2PWorldInfo world) {
+        this.currentWorld = world;
+        publishHello();
+    }
+
     public void unpublishWorld() {
         this.currentWorld = null;
         Mossy.LOGGER.info("Unpublished world from MOSS mesh");

@@ -2,6 +2,7 @@ package md.redstone;
 
 import md.redstone.config.MossyConfig;
 import md.redstone.moss.MossManager;
+import md.redstone.moss.MossyDedicatedServerBridge;
 import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,7 @@ public class Mossy implements ModInitializer {
 			LOGGER.error("Failed to initialize Mossy config", e);
 		}
 		
+		MossyDedicatedServerBridge.register();
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			MossManager manager = MossManager.getInstance();
 			if (manager.isRunning()) {
