@@ -1,5 +1,6 @@
 package md.redstone.mixin.client;
 
+import md.redstone.access.MossyServerSearchProvider;
 import md.redstone.moss.DiscoveredWorlds;
 import md.redstone.moss.P2PWorldInfo;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;

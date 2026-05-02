@@ -1,5 +1,6 @@
 package md.redstone.mixin.client;
 
+import md.redstone.access.MossyServerSearchProvider;
 import md.redstone.gui.FriendListScreen;
 import md.redstone.moss.DiscoveredWorlds;
 import net.minecraft.client.gui.components.Button;

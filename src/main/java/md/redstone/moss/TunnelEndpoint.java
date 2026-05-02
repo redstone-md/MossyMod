@@ -36,6 +36,7 @@ public final class TunnelEndpoint {
     private final BlockingQueue<byte[]> readQueue = new LinkedBlockingQueue<>();
     private byte[] pendingRead = new byte[0];
     private int pendingReadOffset = 0;
+    private volatile int lastAckSent = -1;
 
     TunnelEndpoint(int streamId, String remotePeerId, String protocol, String channel, MossTunnel tunnel) {
         this.streamId = streamId;
@@ -92,8 +93,24 @@ public final class TunnelEndpoint {
         pendingAckFrames.put(seq, new PendingFrame(seq, data, System.currentTimeMillis()));
     }
 
-    void handleAck(int seq) {
-        pendingAckFrames.remove(seq);
+    void handleAck(int ackedThrough) {
+        pendingAckFrames.entrySet().removeIf(e -> e.getKey() < ackedThrough);
+    }
+
+    public int pendingAckCount() {
+        return pendingAckFrames.size();
+    }
+
+    int getExpectedReadSeq() {
+        return expectedReadSeq.get();
+    }
+
+    int getLastAckSent() {
+        return lastAckSent;
+    }
+
+    void setLastAckSent(int seq) {
+        this.lastAckSent = seq;
     }
 
     List<PendingFrame> collectRetransmits(long nowMillis, long retryDelayMillis) {

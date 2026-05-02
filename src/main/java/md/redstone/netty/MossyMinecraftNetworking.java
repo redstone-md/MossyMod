@@ -8,7 +8,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultEventLoopGroup;
-import io.netty.handler.timeout.ReadTimeoutHandler;
 import md.redstone.Mossy;
 import md.redstone.moss.TunnelEndpoint;
 import net.minecraft.network.Connection;
@@ -48,9 +47,13 @@ public final class MossyMinecraftNetworking {
                     }
 
                     ChannelPipeline pipeline = channel.pipeline();
-                    pipeline.addLast("timeout", new ReadTimeoutHandler(30));
+                    //? if >=1.20.5 {
                     Connection.configureSerialization(pipeline, PacketFlow.CLIENTBOUND, false, null);
                     connection.configurePacketHandler(pipeline);
+                    //?} else {
+                    /*Connection.configureSerialization(pipeline, PacketFlow.CLIENTBOUND);
+                    pipeline.addLast("packet_handler", connection);
+                    *///?}
                 }
             })
             .channel(MossyChannel.class)
@@ -72,13 +75,21 @@ public final class MossyMinecraftNetworking {
 
         MossyServerChildChannel channel = new MossyServerChildChannel(null, endpoint);
         ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast("timeout", new ReadTimeoutHandler(30));
+        //? if >=1.20.5 {
         Connection.configureSerialization(pipeline, PacketFlow.SERVERBOUND, false, null);
+        //?} else {
+        /*Connection.configureSerialization(pipeline, PacketFlow.SERVERBOUND);
+        *///?}
         MossyDebug.recordEvent("Configured server pipeline for " + MossyDebug.describeEndpoint(endpoint));
 
         server.getConnection().getConnections().add(connection);
+        //? if >=1.20.5 {
         connection.configurePacketHandler(pipeline);
         connection.setListenerForServerboundHandshake(new ServerHandshakePacketListenerImpl(server, connection));
+        //?} else {
+        /*pipeline.addLast("packet_handler", connection);
+        connection.setListener(new ServerHandshakePacketListenerImpl(server, connection));
+        *///?}
         MossyDebug.recordEvent("Installed handshake listener for " + MossyDebug.describeEndpoint(endpoint));
         SERVER_CHILD_EVENT_LOOPS.register(channel).syncUninterruptibly();
         MossyDebug.recordEvent("Registered server child channel for " + MossyDebug.describeEndpoint(endpoint));

@@ -34,11 +34,17 @@ object P2PConnectionManager {
         
         val host = sanitizeHost(world.hostAddress())
         val address = "$host:${world.port()}"
+        //? if >=1.20.5 {
         val serverData = ServerData(world.worldName(), address, ServerData.Type.OTHER)
+        //?} else
+        /*val serverData = ServerData(world.worldName(), address, false)*/
         val serverAddress = ServerAddress.parseString(address)
 
         Mossy.LOGGER.info("Opening direct TCP fallback to {} for '{}'", address, world.worldName())
+        //? if >=1.20.5 {
         ConnectScreen.startConnecting(parentScreen, mc, serverAddress, serverData, false, null)
+        //?} else
+        /*ConnectScreen.startConnecting(parentScreen, mc, serverAddress, serverData, false)*/
         return true
     }
 

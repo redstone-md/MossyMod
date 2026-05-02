@@ -4,6 +4,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.util.concurrent.DefaultThreadFactory;
+
+import java.nio.channels.ClosedChannelException;
 import md.redstone.Mossy;
 import md.redstone.moss.TunnelEndpoint;
 
@@ -17,10 +19,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Child channel created by MossyServerChannel for accepted connections.
  */
 public class MossyServerChildChannel extends AbstractChannel {
-    
+
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
     private static final ExecutorService readExecutor = Executors.newCachedThreadPool(
         new DefaultThreadFactory("mossy-child-read", true)
+    );
+    private static final ExecutorService closeExecutor = Executors.newCachedThreadPool(
+        new DefaultThreadFactory("mossy-child-close", true)
     );
     
     private final ChannelConfig config = new DefaultChannelConfig(this);
@@ -149,9 +154,16 @@ public class MossyServerChildChannel extends AbstractChannel {
             active.set(false);
             MossyDebug.recordEvent("Closing server channel " + MossyDebug.describeAddress(remoteAddress));
             Mossy.LOGGER.info("Closing MOSS server channel for {}", MossyDebug.describeAddress(remoteAddress));
-            if (tunnel != null) {
-                tunnel.close();
-                tunnel = null;
+            TunnelEndpoint t = tunnel;
+            tunnel = null;
+            if (t != null) {
+                closeExecutor.submit(() -> {
+                    try {
+                        t.close();
+                    } catch (Exception e) {
+                        Mossy.LOGGER.warn("MOSS server tunnel cleanup failed", e);
+                    }
+                });
             }
         }
     }
@@ -163,13 +175,18 @@ public class MossyServerChildChannel extends AbstractChannel {
     @Override
     protected void doWrite(ChannelOutboundBuffer in) throws Exception {
         if (!isActive()) {
-            throw new IOException("Channel not active");
+            Object msg;
+            ClosedChannelException closed = new ClosedChannelException();
+            while ((msg = in.current()) != null) {
+                in.remove(closed);
+            }
+            return;
         }
-        
+
         while (true) {
             Object msg = in.current();
             if (msg == null) break;
-            
+
             if (msg instanceof ByteBuf buf) {
                 try {
                     if (buf.hasArray()) {
@@ -182,7 +199,10 @@ public class MossyServerChildChannel extends AbstractChannel {
                     in.remove();
                 } catch (IOException e) {
                     in.remove(e);
-                    throw e;
+                    if (open.get()) {
+                        unsafe().close(unsafe().voidPromise());
+                    }
+                    return;
                 }
             } else {
                 in.remove(new UnsupportedOperationException("Unsupported message type: " + msg.getClass()));

@@ -31,6 +31,8 @@ public final class MossTunnel {
     private static final byte TYPE_CLOSE = 0x04;
     private static final byte TYPE_ACK = 0x05;
     private static final long RETRANSMIT_DELAY_MS = 250L;
+    private static final long ACK_FLUSH_INTERVAL_MS = 25L;
+    private static final int MAX_RETRANSMIT_PER_CYCLE = 96;
 
     private static final AtomicInteger streamIdCounter = new AtomicInteger(1);
 
@@ -42,6 +44,7 @@ public final class MossTunnel {
     private final String listenerId = "tunnel-" + UUID.randomUUID();
 
     private volatile ScheduledExecutorService retransmitExecutor;
+    private volatile ScheduledExecutorService ackExecutor;
     private volatile boolean running = false;
 
     public MossTunnel(MossManager moss) {
@@ -59,12 +62,25 @@ public final class MossTunnel {
         retransmitExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread thread = new Thread(r, listenerId + "-retransmit");
             thread.setDaemon(true);
+            thread.setPriority(Thread.NORM_PRIORITY);
+            return thread;
+        });
+        ackExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread thread = new Thread(r, listenerId + "-ack");
+            thread.setDaemon(true);
+            thread.setPriority(Thread.NORM_PRIORITY + 1);
             return thread;
         });
         retransmitExecutor.scheduleAtFixedRate(
             this::retransmitPendingFrames,
             RETRANSMIT_DELAY_MS,
             RETRANSMIT_DELAY_MS,
+            TimeUnit.MILLISECONDS
+        );
+        ackExecutor.scheduleAtFixedRate(
+            this::flushPendingAcks,
+            ACK_FLUSH_INTERVAL_MS,
+            ACK_FLUSH_INTERVAL_MS,
             TimeUnit.MILLISECONDS
         );
         running = true;
@@ -80,6 +96,10 @@ public final class MossTunnel {
         if (retransmitExecutor != null) {
             retransmitExecutor.shutdownNow();
             retransmitExecutor = null;
+        }
+        if (ackExecutor != null) {
+            ackExecutor.shutdownNow();
+            ackExecutor = null;
         }
         moss.removeRawMessageListener(listenerId);
 
@@ -196,16 +216,29 @@ public final class MossTunnel {
 
         switch (frame.type()) {
             case TYPE_ACCEPT -> endpoint.handleAccept();
-            case TYPE_DATA -> {
-                publishFrame(endpoint, TYPE_ACK, frame.seq(), new byte[0]);
-                endpoint.handleData(frame.seq(), frame.payload());
-            }
+            case TYPE_DATA -> endpoint.handleData(frame.seq(), frame.payload());
             case TYPE_ACK -> endpoint.handleAck(frame.seq());
             case TYPE_CLOSE -> {
                 endpoint.handleClose();
                 unregisterEndpoint(endpoint);
             }
             default -> {
+            }
+        }
+    }
+
+    private void flushPendingAcks() {
+        if (!running) {
+            return;
+        }
+        for (TunnelEndpoint endpoint : activeTunnels.values()) {
+            if (!endpoint.isConnected()) {
+                continue;
+            }
+            int expected = endpoint.getExpectedReadSeq();
+            if (expected != endpoint.getLastAckSent()) {
+                endpoint.setLastAckSent(expected);
+                publishFrame(endpoint, TYPE_ACK, expected, new byte[0]);
             }
         }
     }
@@ -224,8 +257,20 @@ public final class MossTunnel {
             if (!endpoint.isConnected()) {
                 continue;
             }
+            int sent = 0;
+            int totalPending = endpoint.pendingAckCount();
             for (TunnelEndpoint.PendingFrame frame : endpoint.collectRetransmits(now, RETRANSMIT_DELAY_MS)) {
+                if (sent >= MAX_RETRANSMIT_PER_CYCLE) {
+                    break;
+                }
                 publishFrame(endpoint, TYPE_DATA, frame.seq, frame.payload);
+                sent++;
+            }
+            if (totalPending > 64 && (now / 1000) % 5 == 0) {
+                Mossy.LOGGER.warn(
+                    "Tunnel streamId={} pending={} retransmitted={} (libmoss congestion)",
+                    endpoint.getStreamId(), totalPending, sent
+                );
             }
         }
     }

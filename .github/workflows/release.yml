@@ -1,0 +1,66 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: setup jdk
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'microsoft'
+
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: derive version
+        id: version
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          version="${tag#v}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: build
+        run: ./gradlew buildAllVersions
+
+      - name: collect release artifacts
+        run: |
+          mkdir -p release-artifacts
+          shopt -s nullglob
+          for jar in versions/*/build/libs/*.jar; do
+            cp "$jar" release-artifacts/
+          done
+          ls -la release-artifacts/
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mossy-${{ steps.version.outputs.version }}
+          path: release-artifacts/
+
+      - name: create github release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Mossy ${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            release-artifacts/*.jar

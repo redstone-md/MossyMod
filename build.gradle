@@ -109,6 +109,24 @@ def downloadMossNatives = tasks.register('downloadMossNatives') {
 	outputs.upToDateWhen { false }
 
 	doLast {
+		def localOverride = providers.gradleProperty('mossLocalNatives').orNull
+		if (localOverride != null && !localOverride.isEmpty()) {
+			def overrideRoot = file(localOverride).toPath()
+			def nativeRoot = outputDir.get().asFile.toPath().resolve('natives')
+			mossNativeTargets.each { platform, target ->
+				def src = overrideRoot.resolve(platform).resolve(target.file)
+				if (!Files.exists(src)) {
+					logger.warn("Local override missing for ${platform}: ${src} (skipping)")
+					return
+				}
+				def targetDir = nativeRoot.resolve(platform)
+				def targetFile = targetDir.resolve(target.file)
+				Files.createDirectories(targetDir)
+				Files.copy(src, targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+			}
+			logger.lifecycle("Using local MOSS natives from ${overrideRoot}")
+			return
+		}
 		def release = readJson(mossReleaseApi)
 		def assets = release.assets.collectEntries { asset -> [(asset.name): asset] }
 		def nativeRoot = outputDir.get().asFile.toPath().resolve('natives')

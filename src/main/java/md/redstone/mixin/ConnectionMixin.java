@@ -3,6 +3,7 @@ package md.redstone.mixin;
 import md.redstone.Mossy;
 import md.redstone.netty.MossyDebug;
 import net.minecraft.network.Connection;
+//? if >=1.20.5
 import net.minecraft.network.DisconnectionDetails;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
@@ -53,11 +54,13 @@ public abstract class ConnectionMixin {
         mossy$logDisconnect(reason != null ? reason.getString() : "<null>");
     }
 
+    //? if >=1.20.5 {
     @Inject(method = "disconnect(Lnet/minecraft/network/DisconnectionDetails;)V", at = @At("HEAD"))
     private void mossy$onDisconnectDetails(DisconnectionDetails details, CallbackInfo ci) {
         String reason = details != null && details.reason() != null ? details.reason().getString() : "<null>";
         mossy$logDisconnect(reason);
     }
+    //?}
 
     @Inject(method = "handleDisconnection", at = @At("TAIL"))
     private void mossy$onHandleDisconnection(CallbackInfo ci) {
@@ -69,10 +72,14 @@ public abstract class ConnectionMixin {
             return;
         }
 
+        //? if >=1.20.5 {
         DisconnectionDetails details = connection.getDisconnectionDetails();
         if (details != null && details.reason() != null) {
             mossy$logDisconnect(details.reason().getString());
         }
+        //?}
+        //? if <1.20.5
+        /*mossy$logDisconnect(MossyDebug.describeAddress(connection.getRemoteAddress()));*/
     }
 
     @Inject(method = "exceptionCaught", at = @At("HEAD"))

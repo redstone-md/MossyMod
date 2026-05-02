@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +40,7 @@ public final class MossManager {
     private MossNative.MossMessageCallback messageCallback;
     private MossNative.MossEventCallback eventCallback;
     private ScheduledExecutorService scheduler;
+    private ExecutorService callbackDispatcher;
     private volatile int handle;
     private volatile boolean running;
     private volatile byte[] localPublicKey = new byte[0];
@@ -103,6 +105,11 @@ public final class MossManager {
         running = true;
         
         scheduler = Executors.newSingleThreadScheduledExecutor();
+        callbackDispatcher = Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, "moss-callback-dispatcher");
+            t.setDaemon(true);
+            return t;
+        });
         scheduler.scheduleAtFixedRate(this::publishHello, 0L, config.helloIntervalSeconds, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(this::requestWorldScan, 1L, Math.max(5, config.helloIntervalSeconds), TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(DiscoveredWorlds::pruneStale, 30L, 30L, TimeUnit.SECONDS);
@@ -116,6 +123,10 @@ public final class MossManager {
         if (scheduler != null) {
             scheduler.shutdownNow();
             scheduler = null;
+        }
+        if (callbackDispatcher != null) {
+            callbackDispatcher.shutdownNow();
+            callbackDispatcher = null;
         }
         if (nativeApi != null && handle > 0) {
             try {
@@ -211,12 +222,51 @@ public final class MossManager {
         return true;
     }
     
+    private volatile long lastStatsAt;
+    private final AtomicInteger publishCount = new AtomicInteger();
+    private final AtomicInteger publishFailCount = new AtomicInteger();
+    private final AtomicInteger publishBytesAccum = new AtomicInteger();
+    final AtomicInteger receiveCount = new AtomicInteger();
+    final AtomicInteger receiveBytesAccum = new AtomicInteger();
+
     public boolean publishRaw(String channel, byte[] data) {
         if (!running || nativeApi == null || handle <= 0) {
             return false;
         }
         int rc = nativeApi.Moss_Publish(handle, channel, data, data.length);
+        publishCount.incrementAndGet();
+        publishBytesAccum.addAndGet(data.length);
+        if (rc != 0) {
+            publishFailCount.incrementAndGet();
+        }
+        maybeLogStats();
         return rc == 0 || rc == -6;
+    }
+
+    private void maybeLogStats() {
+        long now = System.currentTimeMillis();
+        long last = lastStatsAt;
+        if (now - last < 5000L) {
+            return;
+        }
+        synchronized (publishCount) {
+            if (now - lastStatsAt < 5000L) {
+                return;
+            }
+            lastStatsAt = now;
+            int pubs = publishCount.getAndSet(0);
+            int fails = publishFailCount.getAndSet(0);
+            int pubBytes = publishBytesAccum.getAndSet(0);
+            int recvs = receiveCount.getAndSet(0);
+            int recvBytes = receiveBytesAccum.getAndSet(0);
+            if (pubs == 0 && recvs == 0) {
+                return;
+            }
+            Mossy.LOGGER.info(
+                "MOSS stats 5s: publish={} ({}KB, {} fail), receive={} ({}KB)",
+                pubs, pubBytes / 1024, fails, recvs, recvBytes / 1024
+            );
+        }
     }
     
     public void subscribeChannel(String channel) {
@@ -265,6 +315,14 @@ public final class MossManager {
         messageCallback = (channel, senderIdPtr, dataPtr, len) -> {
             byte[] senderId = senderIdPtr != null ? senderIdPtr.getByteArray(0, 32) : new byte[0];
             byte[] payload = dataPtr != null && len > 0 ? dataPtr.getByteArray(0, len) : new byte[0];
+            ExecutorService dispatcher = callbackDispatcher;
+            if (dispatcher != null && !dispatcher.isShutdown()) {
+                try {
+                    dispatcher.execute(() -> handleIncomingMessage(channel, senderId, payload));
+                    return;
+                } catch (Exception ignored) {
+                }
+            }
             handleIncomingMessage(channel, senderId, payload);
         };
         
@@ -315,6 +373,9 @@ public final class MossManager {
         if (!running || senderId == null || payload == null || payload.length == 0) {
             return;
         }
+        receiveCount.incrementAndGet();
+        receiveBytesAccum.addAndGet(payload.length);
+        maybeLogStats();
         // Skip own messages
         if (localPublicKey.length == 32 && Arrays.equals(localPublicKey, senderId)) {
             return;
@@ -335,7 +396,7 @@ public final class MossManager {
         // Handle world discovery channel
         if (WORLD_CHANNEL.equals(channel)) {
             String message = new String(payload, StandardCharsets.UTF_8);
-            
+
             if (message.startsWith(SCAN_PREFIX)) {
                 publishHello();
                 return;
@@ -378,6 +439,9 @@ public final class MossManager {
             "upnp_enabled", true,
             "natpmp_enabled", true,
             "pcp_enabled", true
+        ));
+        root.put("transport", Map.of(
+            "high_throughput", true
         ));
         return GSON.toJson(root);
     }

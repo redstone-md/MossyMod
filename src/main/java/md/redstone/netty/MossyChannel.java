@@ -13,6 +13,7 @@ import md.redstone.moss.TunnelEndpoint;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,6 +29,9 @@ public class MossyChannel extends AbstractChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false, 16);
     private static final ExecutorService readExecutor = Executors.newCachedThreadPool(
         new DefaultThreadFactory("mossy-channel-read", true)
+    );
+    private static final ExecutorService closeExecutor = Executors.newCachedThreadPool(
+        new DefaultThreadFactory("mossy-channel-close", true)
     );
     
     private final MossyChannelConfig config = new MossyChannelConfig(this);
@@ -118,13 +122,23 @@ public class MossyChannel extends AbstractChannel {
                 readThread.interrupt();
                 readThread = null;
             }
-            if (tunnelManager != null) {
-                tunnelManager.stop();
-                tunnelManager = null;
-            } else if (tunnel != null) {
-                tunnel.close();
-            }
+            MossTunnel mgr = tunnelManager;
+            TunnelEndpoint endpoint = tunnel;
+            tunnelManager = null;
             tunnel = null;
+            if (mgr != null || endpoint != null) {
+                closeExecutor.submit(() -> {
+                    try {
+                        if (mgr != null) {
+                            mgr.stop();
+                        } else {
+                            endpoint.close();
+                        }
+                    } catch (Exception e) {
+                        Mossy.LOGGER.warn("MOSS client tunnel cleanup failed", e);
+                    }
+                });
+            }
         }
     }
     
@@ -155,9 +169,11 @@ public class MossyChannel extends AbstractChannel {
                     }
                 }
             } catch (Exception e) {
-                MossyDebug.recordEvent("Client read loop failed");
-                Mossy.LOGGER.error("MOSS client read loop failed for {}", MossyDebug.describeAddress(remoteAddress), e);
-                pipeline().fireExceptionCaught(e);
+                if (open.get()) {
+                    MossyDebug.recordEvent("Client read loop failed");
+                    Mossy.LOGGER.error("MOSS client read loop failed for {}", MossyDebug.describeAddress(remoteAddress), e);
+                    pipeline().fireExceptionCaught(e);
+                }
             } finally {
                 readThread = null;
                 readPending.set(false);
@@ -168,13 +184,18 @@ public class MossyChannel extends AbstractChannel {
     @Override
     protected void doWrite(ChannelOutboundBuffer in) throws Exception {
         if (!isActive()) {
-            throw new IOException("Channel not active");
+            Object msg;
+            ClosedChannelException closed = new ClosedChannelException();
+            while ((msg = in.current()) != null) {
+                in.remove(closed);
+            }
+            return;
         }
-        
+
         while (true) {
             Object msg = in.current();
             if (msg == null) break;
-            
+
             if (msg instanceof ByteBuf buf) {
                 try {
                     if (buf.hasArray()) {
@@ -187,7 +208,10 @@ public class MossyChannel extends AbstractChannel {
                     in.remove();
                 } catch (IOException e) {
                     in.remove(e);
-                    throw e;
+                    if (open.get()) {
+                        unsafe().close(unsafe().voidPromise());
+                    }
+                    return;
                 }
             } else {
                 in.remove(new UnsupportedOperationException("Unsupported message type: " + msg.getClass()));

@@ -1,4 +1,4 @@
-package md.redstone.mixin.client;
+package md.redstone.access;
 
 public interface MossyServerSearchProvider {
     String mossy$getServerSearchQuery();
