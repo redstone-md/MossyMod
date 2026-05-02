@@ -124,7 +124,40 @@ public final class MossyDedicatedServerBridge {
             server.getPlayerCount(),
             server.getMaxPlayers(),
             System.currentTimeMillis(),
-            moss.getPublicKeyBase64()
+            moss.getPublicKeyBase64(),
+            readServerIcon(server)
         );
+    }
+
+    private static volatile String cachedIconBase64;
+    private static volatile long cachedIconMtime;
+
+    private static String readServerIcon(MinecraftServer server) {
+        try {
+            java.nio.file.Path iconPath = server.getServerDirectory().resolve("server-icon.png");
+            if (!java.nio.file.Files.exists(iconPath)) {
+                cachedIconBase64 = null;
+                cachedIconMtime = 0L;
+                return "";
+            }
+            long mtime = java.nio.file.Files.getLastModifiedTime(iconPath).toMillis();
+            if (cachedIconBase64 != null && mtime == cachedIconMtime) {
+                return cachedIconBase64;
+            }
+            byte[] bytes = java.nio.file.Files.readAllBytes(iconPath);
+            if (bytes.length > 32 * 1024) {
+                Mossy.LOGGER.warn("server-icon.png is {} bytes; skipping mesh publish", bytes.length);
+                cachedIconBase64 = "";
+                cachedIconMtime = mtime;
+                return "";
+            }
+            String encoded = java.util.Base64.getEncoder().encodeToString(bytes);
+            cachedIconBase64 = encoded;
+            cachedIconMtime = mtime;
+            return encoded;
+        } catch (Exception e) {
+            Mossy.LOGGER.debug("Failed to read server-icon.png", e);
+            return "";
+        }
     }
 }

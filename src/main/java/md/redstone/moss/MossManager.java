@@ -357,7 +357,8 @@ public final class MossManager {
             currentWorld.playerCount(),
             currentWorld.maxPlayers(),
             System.currentTimeMillis(),
-            currentWorld.ownerPublicKey()
+            currentWorld.ownerPublicKey(),
+            currentWorld.iconBase64()
         );
         currentWorld = world;
         String helloPayload = HELLO_PREFIX + GSON.toJson(world.toMap());
