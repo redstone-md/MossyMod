@@ -26,6 +26,9 @@ jobs:
           java-version: '21'
           distribution: 'microsoft'
 
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
 
@@ -49,18 +52,19 @@ jobs:
           done
           ls -la release-artifacts/
 
-      - name: upload artifacts
-        uses: actions/upload-artifact@v4
+      - name: generate release notes
+        id: changelog
+        uses: orhun/git-cliff-action@v4
         with:
-          name: mossy-${{ steps.version.outputs.version }}
-          path: release-artifacts/
+          config: cliff.toml
+          args: --latest --strip header
 
       - name: create github release
         uses: softprops/action-gh-release@v2
         with:
           name: Mossy ${{ steps.version.outputs.version }}
           tag_name: ${{ steps.version.outputs.tag }}
-          generate_release_notes: true
+          body_path: ${{ steps.changelog.outputs.changelog }}
           fail_on_unmatched_files: true
           files: |
             release-artifacts/*.jar
